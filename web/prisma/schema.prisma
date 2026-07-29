@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  Int          @id @default(autoincrement())
+  name                String?
+  email               String?      @unique
+  passwordHash        String?      @map("password_hash")
+  whatsappNumber      String       @unique @map("whatsapp_number")
+  age                 Int?
+  gender              String?
+  heightCm            Float?       @map("height_cm")
+  currentWeightKg     Float?       @map("current_weight_kg")
+  activityLevel       String?      @map("activity_level")
+  dailyCalorieTarget  Int          @default(1779) @map("daily_calorie_target")
+  targetProteinG      Int          @default(98) @map("target_protein_g")
+  targetCarbsG        Int          @default(237) @map("target_carbs_g")
+  targetFatsG         Int          @default(49) @map("target_fats_g")
+  fitnessGoal         String       @default("maintain") @map("fitness_goal")
+  onboardingComplete  Boolean      @default(false) @map("onboarding_complete")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  mealLogs            MealLog[]
+  weightLogs          WeightLog[]
+  workoutLogs         WorkoutLog[]
+
+  @@map("users")
+}
+
+model MealLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  timestamp  DateTime @default(now())
+  foodName   String   @map("food_name")
+  calories   Int
+  proteinG   Int      @map("protein_g")
+  carbsG     Int      @map("carbs_g")
+  fatsG      Int      @map("fats_g")
+  imageUrl   String?  @map("image_url")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("meal_logs")
+}
+
+model WeightLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  timestamp DateTime @default(now())
+  weightKg  Float    @map("weight_kg")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("weight_logs")
+}
+
+model WorkoutLog {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  timestamp       DateTime @default(now())
+  activityName    String   @map("activity_name")
+  durationMinutes Int      @map("duration_minutes")
+  caloriesBurned  Float    @map("calories_burned")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("workout_logs")
+}
