@@ -5,3 +5,5 @@ temp_9router/
 .env
 .env*.local
 .DS_Store
+.agents/
+md/
