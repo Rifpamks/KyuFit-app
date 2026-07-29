@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd web && npx prisma generate && next build",
+  "outputDirectory": "web/.next",
+  "framework": "nextjs"
+}
