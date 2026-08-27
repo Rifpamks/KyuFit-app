@@ -509,12 +509,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Global Single Source Date Filter Bar */}
-        <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
-
         {/* TAB 1: TODAY (Dashboard & Log Makanan) */}
         {activeTab === "today" && (
           <main className="space-y-4">
+            
+            {/* Filter Date Bar for Today Menu */}
+            <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
 
             {/* Calorie Card with Progress Ring */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
@@ -800,44 +800,6 @@ export default function Home() {
         {activeTab === "progress" && (
           <main className="space-y-4">
             
-            {/* Target Date Projection Card */}
-            {insightsData && (
-              <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">Proyeksi Target Goal</h3>
-                  <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
-                    {insightsData.projection.paceCategory.toUpperCase()} PACE
-                  </span>
-                </div>
-                <div>
-                  <div className="text-xl font-extrabold text-stone-900">
-                    {insightsData.projection.estimatedTargetDate ? (
-                      new Date(insightsData.projection.estimatedTargetDate).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                      })
-                    ) : (
-                      "On Track (Stabil)"
-                    )}
-                  </div>
-                  <p className="text-xs text-stone-500 mt-1">
-                    {insightsData.projection.estimatedDaysRemaining !== null
-                      ? `Estimasi ${insightsData.projection.estimatedDaysRemaining} hari lagi untuk target ${insightsData.projection.targetWeightKg} kg (${insightsData.projection.weightDiffKg} kg)`
-                      : "Berat badan stabil sesuai target pemeliharaan."}
-                  </p>
-                </div>
-                <div className="pt-2 border-t border-stone-100 text-[11px] text-stone-500 flex justify-between">
-                  <span>Rata-rata Defisit 7 Hari:</span>
-                  <span className="font-bold text-orange-600">
-                    {insightsData.projection.avgDailyDeficitOrSurplus < 0
-                      ? `${Math.abs(insightsData.projection.avgDailyDeficitOrSurplus)} kcal/hari`
-                      : "Ideal / On Target"}
-                  </span>
-                </div>
-              </div>
-            )}
-
             {/* Quick Weight Input Form */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
               <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
