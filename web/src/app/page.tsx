@@ -76,6 +76,21 @@ interface DailySummary {
     carbsG: number;
     fatsG: number;
     workoutCalories: number;
+    daysInRange?: number;
+    mode?: string;
+    dailyAverages?: {
+      calories: number;
+      proteinG: number;
+      carbsG: number;
+      fatsG: number;
+      workoutCalories: number;
+    };
+    scaledTargets?: {
+      calories: number;
+      proteinG: number;
+      carbsG: number;
+      fatsG: number;
+    };
   };
 }
 
@@ -379,18 +394,45 @@ export default function Home() {
     whatsappNumber: "085693553908"
   };
 
+  const daysInRange = summaryData?.summary.daysInRange || 1;
+  const isMultiDay = dateFilter.mode !== "daily" && daysInRange > 1;
+
   const consumedCalories = summaryData?.summary.calories || 0;
   const burnedCalories = summaryData?.summary.workoutCalories || 0;
   const targetCalories = user.dailyCalorieTarget;
   
-  const remainingCalories = targetCalories - consumedCalories + burnedCalories;
+  const dailyAvg = summaryData?.summary.dailyAverages || {
+    calories: Math.round(consumedCalories / daysInRange),
+    proteinG: Math.round((summaryData?.summary.proteinG || 0) / daysInRange),
+    carbsG: Math.round((summaryData?.summary.carbsG || 0) / daysInRange),
+    fatsG: Math.round((summaryData?.summary.fatsG || 0) / daysInRange),
+    workoutCalories: Math.round(burnedCalories / daysInRange),
+  };
+
+  const scaledTargets = summaryData?.summary.scaledTargets || {
+    calories: user.dailyCalorieTarget * daysInRange,
+    proteinG: user.targetProteinG * daysInRange,
+    carbsG: user.targetCarbsG * daysInRange,
+    fatsG: user.targetFatsG * daysInRange,
+  };
+
+  // For multi-day mode, evaluate percentages & remaining calories using daily averages
+  const activeCalories = isMultiDay ? dailyAvg.calories : consumedCalories;
+  const activeBurned = isMultiDay ? dailyAvg.workoutCalories : burnedCalories;
+  const activeTarget = targetCalories;
+
+  const remainingCalories = activeTarget - activeCalories + activeBurned;
   const isOverBudget = remainingCalories < 0;
   const displayRemaining = Math.abs(remainingCalories);
-  const caloriePercent = Math.min(100, Math.round((consumedCalories / targetCalories) * 100));
+  const caloriePercent = Math.min(100, Math.round((activeCalories / activeTarget) * 100));
 
   const consumedProtein = summaryData?.summary.proteinG || 0;
   const consumedCarbs = summaryData?.summary.carbsG || 0;
   const consumedFats = summaryData?.summary.fatsG || 0;
+
+  const activeProtein = isMultiDay ? dailyAvg.proteinG : consumedProtein;
+  const activeCarbs = isMultiDay ? dailyAvg.carbsG : consumedCarbs;
+  const activeFats = isMultiDay ? dailyAvg.fatsG : consumedFats;
 
   const latestWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weightKg : null;
 
@@ -462,10 +504,17 @@ export default function Home() {
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                 <div>
-                  <h2 className="text-xs uppercase font-bold text-stone-400 tracking-wider">Target Kalori Harian</h2>
+                  <h2 className="text-xs uppercase font-bold text-stone-400 tracking-wider">
+                    {isMultiDay ? `Target Rata-Rata Kalori Harian (${daysInRange} Hari)` : "Target Kalori Harian"}
+                  </h2>
                   <div className="text-2xl font-black text-stone-900 mt-0.5">
-                    {consumedCalories} <span className="text-xs font-normal text-stone-500">/ {targetCalories} kcal</span>
+                    {activeCalories} <span className="text-xs font-normal text-stone-500">/ {targetCalories} kcal{isMultiDay ? " (avg/hari)" : ""}</span>
                   </div>
+                  {isMultiDay && (
+                    <div className="text-[11px] font-semibold text-orange-600 mt-1">
+                      Total Periode: <strong>{consumedCalories}</strong> / {scaledTargets.calories} kcal
+                    </div>
+                  )}
                 </div>
                 
                 {/* Clean SVG Progress Ring */}
@@ -502,12 +551,12 @@ export default function Home() {
               {/* Intake vs Burned Breakdown */}
               <div className="grid grid-cols-3 gap-2 text-center py-1 bg-stone-50 rounded-xl p-3 border border-stone-100">
                 <div>
-                  <div className="text-[10px] font-bold text-stone-400 uppercase">Intake</div>
-                  <div className="text-sm font-extrabold text-orange-600">{consumedCalories} <span className="text-[10px] text-stone-400">kcal</span></div>
+                  <div className="text-[10px] font-bold text-stone-400 uppercase">{isMultiDay ? "Intake Avg" : "Intake"}</div>
+                  <div className="text-sm font-extrabold text-orange-600">{activeCalories} <span className="text-[10px] text-stone-400">kcal</span></div>
                 </div>
                 <div className="border-x border-stone-200">
-                  <div className="text-[10px] font-bold text-stone-400 uppercase">Olahraga</div>
-                  <div className="text-sm font-extrabold text-green-600">-{burnedCalories} <span className="text-[10px] text-stone-400">kcal</span></div>
+                  <div className="text-[10px] font-bold text-stone-400 uppercase">{isMultiDay ? "Olahraga Avg" : "Olahraga"}</div>
+                  <div className="text-sm font-extrabold text-green-600">-{activeBurned} <span className="text-[10px] text-stone-400">kcal</span></div>
                 </div>
                 <div>
                   <div className="text-[10px] font-bold text-stone-400 uppercase">{isOverBudget ? "Kelebihan" : "Sisa Budget"}</div>
@@ -520,7 +569,10 @@ export default function Home() {
 
             {/* Kalg.ai Style Macro Breakdown (4 Pill Cards) */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
-              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider mb-3">Rincian Makronutrisi</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">Rincian Makronutrisi</h3>
+                {isMultiDay && <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">Rata-rata per hari</span>}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 
                 {/* Protein */}
@@ -529,8 +581,10 @@ export default function Home() {
                     💪
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-stone-900">{consumedProtein} / {user.targetProteinG}g</div>
-                    <div className="text-[10px] font-medium text-stone-400">Protein</div>
+                    <div className="text-xs font-bold text-stone-900">{activeProtein} / {user.targetProteinG}g</div>
+                    <div className="text-[10px] font-medium text-stone-400">
+                      {isMultiDay ? `Protein (Total ${consumedProtein}g)` : "Protein"}
+                    </div>
                   </div>
                 </div>
 
@@ -540,8 +594,10 @@ export default function Home() {
                     🌾
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-stone-900">{consumedCarbs} / {user.targetCarbsG}g</div>
-                    <div className="text-[10px] font-medium text-stone-400">Karbohidrat</div>
+                    <div className="text-xs font-bold text-stone-900">{activeCarbs} / {user.targetCarbsG}g</div>
+                    <div className="text-[10px] font-medium text-stone-400">
+                      {isMultiDay ? `Karbo (Total ${consumedCarbs}g)` : "Karbohidrat"}
+                    </div>
                   </div>
                 </div>
 
@@ -551,8 +607,10 @@ export default function Home() {
                     🥑
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-stone-900">{consumedFats} / {user.targetFatsG}g</div>
-                    <div className="text-[10px] font-medium text-stone-400">Lemak</div>
+                    <div className="text-xs font-bold text-stone-900">{activeFats} / {user.targetFatsG}g</div>
+                    <div className="text-[10px] font-medium text-stone-400">
+                      {isMultiDay ? `Lemak (Total ${consumedFats}g)` : "Lemak"}
+                    </div>
                   </div>
                 </div>
 
@@ -562,8 +620,8 @@ export default function Home() {
                     ⚡
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-stone-900">{consumedProtein * 4 + consumedCarbs * 4 + consumedFats * 9} kcal</div>
-                    <div className="text-[10px] font-medium text-stone-400">Total Makro</div>
+                    <div className="text-xs font-bold text-stone-900">{activeProtein * 4 + activeCarbs * 4 + activeFats * 9} kcal</div>
+                    <div className="text-[10px] font-medium text-stone-400">{isMultiDay ? "Avg Total Makro" : "Total Makro"}</div>
                   </div>
                 </div>
 

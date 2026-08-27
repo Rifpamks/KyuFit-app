@@ -128,6 +128,33 @@ export async function GET(req: Request) {
 
     const totalWorkoutCalories = workoutLogs.reduce((sum, log) => sum + log.caloriesBurned, 0);
 
+    // Calculate daysInRange for target scaling and daily averages
+    const durationMs = Math.max(endWIB.getTime() - startWIB.getTime(), 1000);
+    const daysInRange = Math.max(Math.round(durationMs / (1000 * 60 * 60 * 24)), 1);
+
+    const mode = startDateParam && endDateParam 
+      ? 'custom' 
+      : monthParam 
+      ? 'monthly' 
+      : yearParam 
+      ? 'yearly' 
+      : 'daily';
+
+    const dailyAverages = {
+      calories: Math.round(summary.calories / daysInRange),
+      proteinG: Math.round(summary.proteinG / daysInRange),
+      carbsG: Math.round(summary.carbsG / daysInRange),
+      fatsG: Math.round(summary.fatsG / daysInRange),
+      workoutCalories: Math.round(totalWorkoutCalories / daysInRange)
+    };
+
+    const scaledTargets = {
+      calories: resolvedUser.dailyCalorieTarget * daysInRange,
+      proteinG: resolvedUser.targetProteinG * daysInRange,
+      carbsG: resolvedUser.targetCarbsG * daysInRange,
+      fatsG: resolvedUser.targetFatsG * daysInRange
+    };
+
     return NextResponse.json({
       success: true,
       data: {
@@ -146,7 +173,11 @@ export async function GET(req: Request) {
         weights: weightLogs,
         summary: {
           ...summary,
-          workoutCalories: totalWorkoutCalories
+          workoutCalories: totalWorkoutCalories,
+          daysInRange,
+          mode,
+          dailyAverages,
+          scaledTargets
         }
       }
     });
