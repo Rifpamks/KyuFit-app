@@ -6,11 +6,12 @@ export interface TargetProjection {
   estimatedDaysRemaining: number | null; // null if 0 deficit/surplus or maintain
   estimatedTargetDate: string | null; // ISO Date YYYY-MM-DD or null
   paceCategory: "aggressive" | "moderate" | "steady" | "stable" | "slow";
+  weightTrendKgPerWeek?: number;
 }
 
 export interface WeeklyInsight {
   id: string;
-  iconType: "flame" | "trophy" | "alert" | "pie" | "activity";
+  iconType: "flame" | "trophy" | "alert" | "pie" | "activity" | "scale";
   title: string;
   description: string;
   sentiment: "positive" | "neutral" | "warning";
@@ -28,16 +29,34 @@ export interface MealSuggestion {
 }
 
 /**
- * Calculates target date projection based on recent 7 days deficit/surplus
+ * Calculates target date projection based on recent calories and weight logs
  */
 export function calculateTargetProjection(
   currentWeightKg: number,
   targetWeightKg: number,
   recent7DaysCalories: { calories: number; workoutCalories: number }[],
   dailyTargetCalories: number,
-  fitnessGoal: string = "cut"
+  fitnessGoal: string = "cut",
+  weightLogs: { weightKg: number; timestamp: Date | string }[] = []
 ): TargetProjection {
   const weightDiffKg = Number((targetWeightKg - currentWeightKg).toFixed(1));
+
+  // Calculate actual weight trend over available weight logs
+  let weightTrendKgPerWeek = 0;
+  if (weightLogs.length >= 2) {
+    const sorted = [...weightLogs].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const daysDiff = Math.max(
+      (new Date(last.timestamp).getTime() - new Date(first.timestamp).getTime()) /
+        (1000 * 60 * 60 * 24),
+      1
+    );
+    const diff = last.weightKg - first.weightKg;
+    weightTrendKgPerWeek = Number(((diff / daysDiff) * 7).toFixed(2));
+  }
 
   if (Math.abs(weightDiffKg) < 0.2 || fitnessGoal === "maintain") {
     return {
@@ -48,34 +67,26 @@ export function calculateTargetProjection(
       estimatedDaysRemaining: null,
       estimatedTargetDate: null,
       paceCategory: "stable",
+      weightTrendKgPerWeek: 0,
     };
   }
 
-  // Calculate average daily energy balance over 7 days (or available days)
+  // Calculate average daily energy balance
   let totalNetCalories = 0;
   const daysCount = Math.max(recent7DaysCalories.length, 1);
 
   for (const day of recent7DaysCalories) {
-    // Net Intake = Intake - Workout
     const netIntake = day.calories - day.workoutCalories;
-    // Energy balance = Net Intake - Daily Target
     totalNetCalories += netIntake - dailyTargetCalories;
   }
 
-  // Average daily surplus/deficit relative to target (approx 500 kcal deficit = 0.5kg/week loss)
-  const avgNetBalance = totalNetCalories / daysCount; // e.g. -500 kcal/day
-
-  // Assuming 1kg body weight approx 7700 kCal
+  const avgNetBalance = totalNetCalories / daysCount;
   const totalCaloriesNeeded = Math.abs(weightDiffKg) * 7700;
 
-  // Expected daily rate towards goal
   let dailyProgressCalories = 0;
   if (fitnessGoal === "cut" && weightDiffKg < 0) {
-    // Needs deficit. Target calorie is already deficit.
-    // Standard recommended deficit is 500 kcal/day (0.5kg/week)
     dailyProgressCalories = Math.max(500 - avgNetBalance, 200);
   } else if (fitnessGoal === "bulk" && weightDiffKg > 0) {
-
     dailyProgressCalories = Math.max(350 + avgNetBalance, 200);
   } else {
     dailyProgressCalories = 350;
@@ -83,7 +94,6 @@ export function calculateTargetProjection(
 
   const estimatedDays = Math.ceil(totalCaloriesNeeded / dailyProgressCalories);
 
-  // Calculate target date
   const targetDateObj = new Date();
   targetDateObj.setDate(targetDateObj.getDate() + estimatedDays);
   const estimatedTargetDate = targetDateObj.toISOString().split("T")[0];
@@ -101,30 +111,69 @@ export function calculateTargetProjection(
     estimatedDaysRemaining: estimatedDays,
     estimatedTargetDate,
     paceCategory,
+    weightTrendKgPerWeek,
   };
 }
 
 /**
- * Generates Weekly AI Health Insights from 7-day logs
+ * Generates Deep AI Health Insights synthesizing Meals + Workouts + Weight Logs
  */
 export function generateWeeklyInsights(
   meals: { calories: number; proteinG: number; carbsG: number; fatsG: number }[],
   workouts: { caloriesBurned: number; durationMinutes: number }[],
-  targets: { dailyCalorieTarget: number; targetProteinG: number }
+  targets: { dailyCalorieTarget: number; targetProteinG: number },
+  weightLogs: { weightKg: number; timestamp: Date | string }[] = []
 ): WeeklyInsight[] {
   const insights: WeeklyInsight[] = [];
 
-  const totalProteinLogged = meals.reduce((sum, m) => sum + (m.proteinG || 0), 0);
-  const avgProteinDaily = Math.round(totalProteinLogged / 7);
+  // 1. Weight Progress & Calorie Correlation Insight
+  if (weightLogs.length >= 2) {
+    const sorted = [...weightLogs].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    const initial = sorted[0].weightKg;
+    const latest = sorted[sorted.length - 1].weightKg;
+    const diff = Number((latest - initial).toFixed(1));
 
-  // 1. Protein Intake Insight
+    if (diff < 0) {
+      insights.push({
+        id: "weight-loss-trend",
+        iconType: "scale",
+        title: "Penurunan Berat Badan Konsisten!",
+        description: `Timbangan Anda menunjukkan penurunan ${Math.abs(diff)} kg. Defisit kalori harian Anda bekerja dengan sangat baik!`,
+        sentiment: "positive",
+      });
+    } else if (diff > 0) {
+      insights.push({
+        id: "weight-gain-trend",
+        iconType: "scale",
+        title: "Tren Kenaikan Berat Badan Terdeteksi",
+        description: `Terdapat kenaikan ${diff} kg dalam catatan terbaru. Pastikan asupan kalori sesuai dengan target fitness goal Anda.`,
+        sentiment: "neutral",
+      });
+    } else {
+      insights.push({
+        id: "weight-stable",
+        iconType: "scale",
+        title: "Berat Badan Stabil",
+        description: "Berat badan Anda berada di angka stabil. Pertahankan konsistensi asupan kalori dan latihan beban.",
+        sentiment: "positive",
+      });
+    }
+  }
+
+  // 2. Protein Intake Insight
+  const totalProteinLogged = meals.reduce((sum, m) => sum + (m.proteinG || 0), 0);
+  const daysCount = Math.max(meals.length > 0 ? 7 : 1, 1);
+  const avgProteinDaily = Math.round(totalProteinLogged / daysCount);
   const proteinRatio = Math.round((avgProteinDaily / targets.targetProteinG) * 100);
+
   if (proteinRatio >= 80) {
     insights.push({
       id: "protein-high",
       iconType: "trophy",
       title: "Konsistensi Protein Sangat Baik!",
-      description: `Rata-rata asupan protein kamu minggu ini mencapai ${avgProteinDaily}g (${proteinRatio}% dari target). Sangat mendukung pemulihan otot!`,
+      description: `Rata-rata asupan protein Anda mencapai ${avgProteinDaily}g (${proteinRatio}% dari target). Sangat mendukung pemulihan otot pasca-workout!`,
       sentiment: "positive",
     });
   } else {
@@ -132,12 +181,12 @@ export function generateWeeklyInsights(
       id: "protein-low",
       iconType: "alert",
       title: "Asupan Protein Perlu Ditingkatkan",
-      description: `Rata-rata protein harian kamu baru ${avgProteinDaily}g dari target ${targets.targetProteinG}g. Pertimbangkan tambah telur, dada ayam, atau tempe.`,
+      description: `Rata-rata protein harian Anda baru ${avgProteinDaily}g dari target ${targets.targetProteinG}g. Tambah dada ayam, telur, atau tempe untuk makro optimal.`,
       sentiment: "warning",
     });
   }
 
-  // 2. Workout & Exhaust Insight
+  // 3. Workout & Energy Recovery Insight
   const totalWorkoutCalories = workouts.reduce((sum, w) => sum + (w.caloriesBurned || 0), 0);
   const totalWorkoutMinutes = workouts.reduce((sum, w) => sum + (w.durationMinutes || 0), 0);
 
@@ -145,8 +194,8 @@ export function generateWeeklyInsights(
     insights.push({
       id: "workout-active",
       iconType: "flame",
-      title: "Pembakaran Kalori Aktif",
-      description: `Kamu berhasil membakar ${totalWorkoutCalories} kCal lewat ${totalWorkoutMinutes} menit sesi latihan minggu ini. Kerja bagus!`,
+      title: "Pembakaran Kalori & Aktivitas Aktif",
+      description: `Anda berhasil membakar ${totalWorkoutCalories} kCal lewat ${totalWorkoutMinutes} menit sesi olahraga. Energi metabolisme meningkat tajam!`,
       sentiment: "positive",
     });
   } else {
@@ -154,12 +203,12 @@ export function generateWeeklyInsights(
       id: "workout-idle",
       iconType: "activity",
       title: "Tingkatkan Aktivitas Fisik",
-      description: "Belum ada sesi olahraga terdaftar minggu ini. Jalan santai 20 menit atau latihan beban ringan bisa bantu tingkatkan metabolisme.",
+      description: "Belum ada sesi olahraga terdaftar minggu ini. Jalan santai 20-30 menit atau latihan ringan sangat bagus menjaga TDEE.",
       sentiment: "neutral",
     });
   }
 
-  // 3. Nutrition Balance Insight
+  // 4. Nutrition Balance Insight
   const totalCalories = meals.reduce((sum, m) => sum + (m.calories || 0), 0);
   const totalFat = meals.reduce((sum, m) => sum + (m.fatsG || 0), 0);
   const fatCalories = totalFat * 9;
@@ -170,15 +219,15 @@ export function generateWeeklyInsights(
       id: "fat-high",
       iconType: "pie",
       title: "Proporsi Lemak Cukup Tinggi",
-      description: `${fatPercentage}% kalori minggu ini berasal dari lemak. Coba kurangi gorengan & olahan minyak berlebih agar defisit lebih tajam.`,
+      description: `${fatPercentage}% kalori berasal dari lemak. Kurangi gorengan & minyak berlebih agar defisit kalori lebih maksimal.`,
       sentiment: "warning",
     });
-  } else {
+  } else if (totalCalories > 0) {
     insights.push({
       id: "macro-balanced",
       iconType: "pie",
       title: "Keseimbangan Makro Nutrisi Terjaga",
-      description: "Distribusi karbohidrat, protein, dan lemak kamu berada di kisaran sehat sesuai target TDEE.",
+      description: "Distribusi karbohidrat, protein, dan lemak Anda berada di kisaran sehat sesuai target TDEE.",
       sentiment: "positive",
     });
   }
@@ -243,7 +292,7 @@ export function recommendMealSuggestions(
     });
     suggestions.push({
       id: "snack-2",
-      title: "Oatmeal Polos (4 Opsional Sendok) + Pisang",
+      title: "Oatmeal Polos (4 Sendok Makan) + Pisang",
       calories: 190,
       proteinG: 5,
       carbsG: 36,
@@ -255,3 +304,4 @@ export function recommendMealSuggestions(
 
   return suggestions;
 }
+

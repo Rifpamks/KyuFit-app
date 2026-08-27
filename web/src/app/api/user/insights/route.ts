@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { getOrCreateDefaultUser } from "@/lib/user";
+import { verifyToken } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import {
   calculateTargetProjection,
@@ -9,29 +11,52 @@ import {
 
 export async function GET() {
   try {
-    const user = await getOrCreateDefaultUser();
+    let user = await getOrCreateDefaultUser();
+
+    // Check session_token cookie for authenticated web user
+    const cookieStore = await cookies();
+    const token = cookieStore.get("session_token")?.value;
+    if (token) {
+      const payload = verifyToken(token);
+      if (payload && payload.userId) {
+        const foundUser = await prisma.user.findUnique({
+          where: { id: payload.userId },
+        });
+        if (foundUser) {
+          user = foundUser;
+        }
+      }
+    }
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Date 7 days ago
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Date 30 days ago for richer weight and trend analysis
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Fetch meals & workouts in last 7 days
+    // Fetch meals, workouts, and weight logs in last 30 days for user
     const meals = await prisma.mealLog.findMany({
       where: {
         userId: user.id,
-        timestamp: { gte: sevenDaysAgo },
+        timestamp: { gte: thirtyDaysAgo },
       },
     });
 
     const workouts = await prisma.workoutLog.findMany({
       where: {
         userId: user.id,
-        timestamp: { gte: sevenDaysAgo },
+        timestamp: { gte: thirtyDaysAgo },
       },
+    });
+
+    const weightLogs = await prisma.weightLog.findMany({
+      where: {
+        userId: user.id,
+        timestamp: { gte: thirtyDaysAgo },
+      },
+      orderBy: { timestamp: "asc" },
     });
 
     // Group meals & workouts by day for projection calculation
@@ -49,22 +74,23 @@ export async function GET() {
 
     const recent7DaysCalories = Object.values(dailyMap);
 
-    // Target weight (default: -3kg from current if cut, +3kg if bulk, or current)
-    const currentWeight = user.currentWeightKg || 70;
+    // Target weight calculation
+    const currentWeight = user.currentWeightKg || (weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weightKg : 70);
     let targetWeight = currentWeight;
     if (user.fitnessGoal === "cut" || user.fitnessGoal === "Cut") targetWeight = Math.max(currentWeight - 3, 50);
     else if (user.fitnessGoal === "bulk" || user.fitnessGoal === "Bulk") targetWeight = currentWeight + 3;
 
-    // 1. Target Projection
+    // 1. Target Projection (incorporating weight logs)
     const projection = calculateTargetProjection(
       currentWeight,
       targetWeight,
       recent7DaysCalories,
       user.dailyCalorieTarget,
-      user.fitnessGoal.toLowerCase()
+      user.fitnessGoal.toLowerCase(),
+      weightLogs
     );
 
-    // 2. Weekly Insights
+    // 2. Multi-Metric Weekly AI Insights
     const insights = generateWeeklyInsights(
       meals.map((m) => ({
         calories: m.calories,
@@ -79,7 +105,8 @@ export async function GET() {
       {
         dailyCalorieTarget: user.dailyCalorieTarget,
         targetProteinG: user.targetProteinG,
-      }
+      },
+      weightLogs
     );
 
     // 3. Today's Remaining Budget for Meal Suggestions

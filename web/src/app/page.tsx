@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DateFilterBar, { DateFilterState } from "@/components/DateFilterBar";
 import {
   Flame,
   Apple,
@@ -95,8 +96,15 @@ export default function Home() {
   // Active Navigation Tab State (5 Tabs)
   const [activeTab, setActiveTab] = useState<MainTab>("today");
 
-  // Date State
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
+  // Date State with Flexible Modes (Daily, Monthly, Yearly, Custom)
+  const [dateFilter, setDateFilter] = useState<DateFilterState>({
+    mode: "daily",
+    date: getTodayString(),
+    month: getTodayString().slice(0, 7),
+    year: new Date().getFullYear().toString(),
+    startDate: getTodayString(),
+    endDate: getTodayString()
+  });
 
   // Data States
   const [summaryData, setSummaryData] = useState<DailySummary | null>(null);
@@ -113,7 +121,7 @@ export default function Home() {
     };
     insights: {
       id: string;
-      iconType: "flame" | "trophy" | "alert" | "pie" | "activity";
+      iconType: "flame" | "trophy" | "alert" | "pie" | "activity" | "scale";
       title: string;
       description: string;
       sentiment: "positive" | "neutral" | "warning";
@@ -163,15 +171,26 @@ export default function Home() {
     if (mounted) {
       fetchData();
     }
-  }, [selectedDate, mounted]);
+  }, [dateFilter, mounted]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError("");
 
-      // Fetch User & Daily Log for selected date
-      const dailyRes = await fetch(`/api/logs/daily?date=${selectedDate}`);
+      let queryUrl = "/api/logs/daily?";
+      if (dateFilter.mode === "daily") {
+        queryUrl += `date=${dateFilter.date}`;
+      } else if (dateFilter.mode === "monthly") {
+        queryUrl += `month=${dateFilter.month}`;
+      } else if (dateFilter.mode === "yearly") {
+        queryUrl += `year=${dateFilter.year}`;
+      } else if (dateFilter.mode === "custom") {
+        queryUrl += `startDate=${dateFilter.startDate}&endDate=${dateFilter.endDate}`;
+      }
+
+      // Fetch User & Daily Log for selected date/mode
+      const dailyRes = await fetch(queryUrl);
       const dailyJson = await dailyRes.json();
       if (!dailyJson.success) {
         throw new Error(dailyJson.error || "Gagal mengambil data catatan harian");
@@ -214,7 +233,7 @@ export default function Home() {
           proteinG: protein ? parseFloat(protein) : 0,
           carbsG: carbs ? parseFloat(carbs) : 0,
           fatsG: fats ? parseFloat(fats) : 0,
-          date: selectedDate
+          date: dateFilter.date
         }),
       });
 
@@ -251,7 +270,7 @@ export default function Home() {
           activityName,
           durationMinutes: parseInt(durationMinutes),
           caloriesBurned: parseFloat(workoutCalories),
-          date: selectedDate
+          date: dateFilter.date
         }),
       });
 
@@ -436,38 +455,8 @@ export default function Home() {
         {activeTab === "today" && (
           <main className="space-y-4">
             
-            {/* Kalg.ai Style Date Selector Strip (5 Days) */}
-            <div className="bg-white p-2 rounded-2xl border border-stone-200 shadow-sm">
-              <div className="grid grid-cols-5 gap-1.5 text-center">
-                {getDaysList().map((day) => {
-                  const dayStr = day.toISOString().split("T")[0];
-                  const isSelected = dayStr === selectedDate;
-                  const dayNum = day.getDate();
-                  const dayAbbr = day.toLocaleDateString("id-ID", { weekday: "short" });
-                  const isToday = dayStr === getTodayString();
-                  
-                  return (
-                    <button
-                      key={dayStr}
-                      onClick={() => setSelectedDate(dayStr)}
-                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all ${
-                        isSelected
-                          ? "bg-orange-500 text-white font-bold shadow-md shadow-orange-500/20"
-                          : "bg-stone-50 text-stone-600 hover:bg-stone-100"
-                      }`}
-                    >
-                      <span className={`text-[10px] uppercase ${isSelected ? "text-orange-100" : "text-stone-400"}`}>
-                        {dayAbbr}
-                      </span>
-                      <span className="text-base font-extrabold mt-0.5">{dayNum}</span>
-                      {isToday && !isSelected && (
-                        <span className="h-1 w-1 rounded-full bg-orange-500 mt-0.5" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Modern Flexible Date Filter Bar */}
+            <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
 
             {/* Calorie Card with Progress Ring */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
@@ -1048,30 +1037,68 @@ export default function Home() {
           </main>
         )}
 
-        {/* TAB 4: AI TIPS (Insights & Rekomendasi Menu) */}
+        {/* TAB 4: AI TIPS (Dynamic Deep AI Health Analysis) */}
         {activeTab === "tips" && (
           <main className="space-y-4">
             
-            {/* Weekly AI Health Insights */}
+            {/* Filter Date Bar for AI Tips */}
+            <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
+
+            {/* Target Projection Summary Card */}
+            {insightsData?.projection && (
+              <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl p-5 text-white shadow-md space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-amber-200 animate-pulse" />
+                    <h3 className="text-xs uppercase font-bold tracking-wider text-orange-100">
+                      Analisa Proyeksi AI KyuFit
+                    </h3>
+                  </div>
+                  <span className="text-[10px] bg-white/20 px-2.5 py-0.5 rounded-full font-extrabold uppercase">
+                    Pace: {insightsData.projection.paceCategory}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
+                    <div className="text-[10px] text-orange-100 font-semibold">Berat Badan Sekarang</div>
+                    <div className="text-xl font-black mt-0.5">{insightsData.projection.currentWeightKg} <span className="text-xs font-normal">kg</span></div>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
+                    <div className="text-[10px] text-orange-100 font-semibold">Target Berat Badan</div>
+                    <div className="text-xl font-black mt-0.5">{insightsData.projection.targetWeightKg} <span className="text-xs font-normal">kg</span></div>
+                  </div>
+                </div>
+
+                {insightsData.projection.estimatedTargetDate && (
+                  <div className="text-xs text-orange-100 flex items-center gap-1.5 pt-1">
+                    <Calendar className="h-4 w-4 text-amber-200" />
+                    <span>Estimasi mencapai target: <strong>{insightsData.projection.estimatedTargetDate}</strong> ({insightsData.projection.estimatedDaysRemaining} hari lagi)</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Weekly Deep AI Health Insights */}
             {insightsData && (
               <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="h-4 w-4 text-orange-500" />
-                    Weekly AI Health Insights
+                    <Activity className="h-4 w-4 text-orange-500" />
+                    Dynamic Multi-Metric Insights (Meal + Workout + Weight)
                   </h3>
-                  <span className="text-[10px] text-stone-400">7 Hari Terakhir</span>
+                  <span className="text-[10px] text-stone-400">Analisa Real-Time</span>
                 </div>
 
                 <div className="space-y-2.5">
                   {insightsData.insights.map((item) => (
-                    <div key={item.id} className="flex items-start gap-2.5 text-xs p-3 rounded-xl bg-stone-50 border border-stone-100">
-                      <span className="mt-0.5 shrink-0">
+                    <div key={item.id} className="flex items-start gap-3 text-xs p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 transition hover:border-orange-200">
+                      <span className="mt-0.5 shrink-0 text-base">
                         {item.sentiment === "positive" ? "🟢" : item.sentiment === "warning" ? "🔴" : "🟡"}
                       </span>
                       <div>
-                        <span className="font-bold text-stone-900">{item.title}: </span>
-                        <span className="text-stone-600">{item.description}</span>
+                        <div className="font-bold text-stone-900 text-xs">{item.title}</div>
+                        <div className="text-stone-600 mt-0.5 leading-relaxed">{item.description}</div>
                       </div>
                     </div>
                   ))}
@@ -1084,18 +1111,18 @@ export default function Home() {
               <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
                 <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
                   <Apple className="h-4 w-4 text-orange-500" />
-                  Rekomendasi Menu Sisa Kalori
+                  Rekomendasi Makanan Pasca-Workout & Makro
                 </h3>
 
                 <div className="space-y-2.5">
                   {insightsData.mealSuggestions.map((meal) => (
-                    <div key={meal.id} className="p-3 rounded-xl bg-stone-50 border border-stone-100 text-xs">
+                    <div key={meal.id} className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 text-xs">
                       <div className="flex justify-between font-bold text-stone-900">
                         <span>{meal.title}</span>
-                        <span className="text-orange-600">{meal.calories} kcal</span>
+                        <span className="text-orange-600 font-extrabold">{meal.calories} kcal</span>
                       </div>
-                      <div className="text-[11px] text-stone-500 mt-1">
-                        P: {meal.proteinG}g | K: {meal.carbsG}g | L: {meal.fatsG}g — <span className="text-stone-400">{meal.note}</span>
+                      <div className="text-[11px] text-stone-600 mt-1">
+                        P: {meal.proteinG}g | K: {meal.carbsG}g | L: {meal.fatsG}g — <span className="text-stone-500 italic">{meal.note}</span>
                       </div>
                     </div>
                   ))}
