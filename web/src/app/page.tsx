@@ -212,8 +212,9 @@ export default function Home() {
       }
       setSummaryData(dailyJson.data);
 
-      // Fetch Weight History
-      const weightRes = await fetch("/api/weight/history");
+      // Fetch Weight History for selected date range
+      const weightUrl = queryUrl.replace("/api/logs/daily?", "/api/weight/history?");
+      const weightRes = await fetch(weightUrl);
       const weightJson = await weightRes.json();
       if (!weightJson.success) {
         throw new Error(weightJson.error || "Gagal mengambil riwayat timbangan");
@@ -437,13 +438,27 @@ export default function Home() {
 
   const latestWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weightKg : null;
 
-  const chartData = weightLogs.map((log) => {
+  // Group same-day weight logs (keep latest per day) and sort chronologically
+  const weightByDateMap: Record<string, { timestamp: Date; weightKg: number }> = {};
+  for (const log of weightLogs) {
     const d = new Date(log.timestamp);
-    return {
-      date: d.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-      weight: log.weightKg,
-    };
-  });
+    const dateStr = d.toISOString().split("T")[0];
+    if (!weightByDateMap[dateStr] || new Date(log.timestamp).getTime() > new Date(weightByDateMap[dateStr].timestamp).getTime()) {
+      weightByDateMap[dateStr] = {
+        timestamp: new Date(log.timestamp),
+        weightKg: log.weightKg
+      };
+    }
+  }
+
+  const sortedWeightLogs = Object.values(weightByDateMap).sort(
+    (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+  );
+
+  const chartData = sortedWeightLogs.map((log) => ({
+    date: log.timestamp.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+    weight: log.weightKg,
+  }));
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-sans antialiased pb-24">
@@ -868,7 +883,9 @@ export default function Home() {
                     <TrendingUp className="h-4 w-4 text-orange-500" />
                     Grafik Progress Berat Badan
                   </h3>
-                  <p className="text-[11px] text-stone-400 mt-0.5">30 Hari Terakhir</p>
+                  <p className="text-[11px] text-stone-400 mt-0.5 font-medium">
+                    Periode: {dateFilter.mode === "monthly" ? `Bulan ${dateFilter.month}` : dateFilter.mode === "yearly" ? `Tahun ${dateFilter.year}` : dateFilter.mode === "custom" ? `${dateFilter.startDate} s/d ${dateFilter.endDate}` : "30 Hari Terdekat"}
+                  </p>
                 </div>
                 <button
                   onClick={fetchData}

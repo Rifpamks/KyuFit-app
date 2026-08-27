@@ -1,15 +1,18 @@
-# Implementation Plan: Goal-Adapted & Dynamic LLM AI Tips
+# Implementation Plan: Dynamic Progress Tab & Weight Chart Anomaly Fix
 
 ## Overview
-Adapt AI Tips insights, sentiments, and recommendations according to the user's explicit fitness goal (`"cut" | "bulk" | "maintain"`).
+Fix weight history API scoping by date filter and resolve the same-day log ordering/grouping anomaly on Recharts LineChart.
 
 ## Task List
 
-### Phase 1: Fitness Goal Matrix Integration in `insights.ts`
-- [ ] Task 1: Update `generateWeeklyInsights()` to accept `fitnessGoal` parameter and adapt sentiments (positive/warning/neutral), titles, and descriptions accordingly.
+### Phase 1: API Route Filtering
+- [ ] Task 1: Update `/api/weight/history/route.ts` to parse date filter parameters and scope query to `[startWIB, endWIB]`.
 
-### Phase 2: Route & Controller Update
-- [ ] Task 2: Pass `user.fitnessGoal` into `generateWeeklyInsights()` inside `/api/user/insights/route.ts`.
+### Phase 2: Chart Data Deduplication & Chronological Sorting
+- [ ] Task 2: Group same-day weight logs in `page.tsx` so each date has a single latest entry, sorted chronologically ascending by timestamp.
 
-### Phase 3: Build Verification & Deployment
-- [ ] Task 3: Execute `npm run build`, verify Cut vs Bulk vs Maintain outputs, commit & push to main.
+### Phase 3: Client Fetch & Dynamic Sub-label
+- [ ] Task 3: Forward date query parameters in `fetchData()` to `/api/weight/history` and render active period name in chart header.
+
+### Phase 4: Build & Deployment Verification
+- [ ] Task 4: Execute `npm run build`, verify smooth weight curve, commit & push to main.

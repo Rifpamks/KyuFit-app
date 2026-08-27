@@ -1,16 +1,21 @@
-# Task List: Goal-Adapted AI Tips
+# Task List: Weight Chart Anomaly Fix
 
-- [ ] Task 1: Adapt `generateWeeklyInsights()` for Fitness Goals (`cut`, `bulk`, `maintain`)
-  - Acceptance: Insights sentiments and text dynamically match the user's specific fitness goal.
-  - Verify: Test function with `cut` vs `bulk` goals.
-  - Files: `web/src/lib/insights.ts`
+- [ ] Task 1: Update `/api/weight/history/route.ts` with date range parsing
+  - Acceptance: API returns weight logs scoped to `[startWIB, endWIB]`.
+  - Verify: Test `/api/weight/history?month=2026-07`.
+  - Files: `web/src/app/api/weight/history/route.ts`
 
-- [ ] Task 2: Pass `user.fitnessGoal` in `/api/user/insights/route.ts`
-  - Acceptance: API queries user's goal from DB and forwards to insights generator.
-  - Verify: Curl `/api/user/insights` for cut vs bulk users.
-  - Files: `web/src/app/api/user/insights/route.ts`
+- [ ] Task 2: Group same-day weight logs & sort chronologically in `page.tsx`
+  - Acceptance: `chartData` has unique date points in ascending time order.
+  - Verify: Check chart rendering from 65kg to 68kg.
+  - Files: `web/src/app/page.tsx`
 
-- [ ] Task 3: Build & Deploy Verification
+- [ ] Task 3: Forward queryUrl & dynamic sub-label in `page.tsx`
+  - Acceptance: Chart header displays active period name.
+  - Verify: Check sub-label on filter change.
+  - Files: `web/src/app/page.tsx`
+
+- [ ] Task 4: Build & Deploy Verification
   - Acceptance: `npm run build` passes cleanly.
   - Verify: Execute `npm run build` and push.
   - Files: All touched files.
