@@ -116,17 +116,22 @@ export function calculateTargetProjection(
 }
 
 /**
- * Generates Deep AI Health Insights synthesizing Meals + Workouts + Weight Logs
+ * Generates Deep AI Health Insights synthesizing Meals + Workouts + Weight Logs,
+ * dynamically adapting to the user's specific fitness goal (Cut, Bulk, Maintain).
  */
 export function generateWeeklyInsights(
   meals: { calories: number; proteinG: number; carbsG: number; fatsG: number }[],
   workouts: { caloriesBurned: number; durationMinutes: number }[],
   targets: { dailyCalorieTarget: number; targetProteinG: number },
-  weightLogs: { weightKg: number; timestamp: Date | string }[] = []
+  weightLogs: { weightKg: number; timestamp: Date | string }[] = [],
+  fitnessGoal: string = "cut",
+  daysInRange: number = 7,
+  periodLabel: string = "Periode Aktif"
 ): WeeklyInsight[] {
   const insights: WeeklyInsight[] = [];
+  const normalizedGoal = (fitnessGoal || "cut").toLowerCase();
 
-  // 1. Weight Progress & Calorie Correlation Insight
+  // 1. Weight Progress & Calorie Correlation Insight (Goal-Adapted)
   if (weightLogs.length >= 2) {
     const sorted = [...weightLogs].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -135,36 +140,91 @@ export function generateWeeklyInsights(
     const latest = sorted[sorted.length - 1].weightKg;
     const diff = Number((latest - initial).toFixed(1));
 
-    if (diff < 0) {
-      insights.push({
-        id: "weight-loss-trend",
-        iconType: "scale",
-        title: "Penurunan Berat Badan Konsisten!",
-        description: `Timbangan Anda menunjukkan penurunan ${Math.abs(diff)} kg. Defisit kalori harian Anda bekerja dengan sangat baik!`,
-        sentiment: "positive",
-      });
-    } else if (diff > 0) {
-      insights.push({
-        id: "weight-gain-trend",
-        iconType: "scale",
-        title: "Tren Kenaikan Berat Badan Terdeteksi",
-        description: `Terdapat kenaikan ${diff} kg dalam catatan terbaru. Pastikan asupan kalori sesuai dengan target fitness goal Anda.`,
-        sentiment: "neutral",
-      });
+    if (normalizedGoal === "bulk") {
+      if (diff > 0) {
+        insights.push({
+          id: "weight-gain-trend",
+          iconType: "scale",
+          title: `Progres Muscle/Weight Gain On Track (${periodLabel})`,
+          description: `Timbangan Anda menunjukkan kenaikan +${diff} kg. Surplus kalori dan asupan protein Anda mendukung pembentukan massa otot!`,
+          sentiment: "positive",
+        });
+      } else if (diff < 0) {
+        insights.push({
+          id: "weight-loss-trend",
+          iconType: "scale",
+          title: "Penurunan BB (Menghambat Bulking)",
+          description: `Terjadi penurunan ${Math.abs(diff)} kg pada ${periodLabel}. Tingkatkan asupan kalori & karbohidrat agar target bulking tercapai.`,
+          sentiment: "warning",
+        });
+      } else {
+        insights.push({
+          id: "weight-stable",
+          iconType: "scale",
+          title: "Berat Badan Stagnan (Bulking)",
+          description: "Berat badan belum mengalami kenaikan. Anda membutuhkan sedikit surplus kalori (300-500 kcal) untuk menambah BB.",
+          sentiment: "neutral",
+        });
+      }
+    } else if (normalizedGoal === "maintain") {
+      if (Math.abs(diff) <= 0.5) {
+        insights.push({
+          id: "weight-stable",
+          iconType: "scale",
+          title: `Berat Badan Sangat Stabil (${periodLabel})`,
+          description: `Berat badan Anda bertahan sangat stabil di angka ${latest} kg. Asupan energi harian Anda berada tepat di titik TDEE maintenance.`,
+          sentiment: "positive",
+        });
+      } else if (diff > 0.5) {
+        insights.push({
+          id: "weight-gain-trend",
+          iconType: "scale",
+          title: "Kenaikan BB di Luar Target Maintenance",
+          description: `Terjadi kenaikan +${diff} kg pada ${periodLabel}. Evaluasi kembali camilan berkalori tinggi.`,
+          sentiment: "warning",
+        });
+      } else {
+        insights.push({
+          id: "weight-loss-trend",
+          iconType: "scale",
+          title: "Penurunan BB di Luar Target Maintenance",
+          description: `Terjadi penurunan ${Math.abs(diff)} kg pada ${periodLabel}. Pastikan Anda memenuhi budget maintenance harian.`,
+          sentiment: "warning",
+        });
+      }
     } else {
-      insights.push({
-        id: "weight-stable",
-        iconType: "scale",
-        title: "Berat Badan Stabil",
-        description: "Berat badan Anda berada di angka stabil. Pertahankan konsistensi asupan kalori dan latihan beban.",
-        sentiment: "positive",
-      });
+      // Default: Cut (Weight Loss)
+      if (diff < 0) {
+        insights.push({
+          id: "weight-loss-trend",
+          iconType: "scale",
+          title: `Penurunan BB Konsisten (${periodLabel})`,
+          description: `Timbangan Anda menunjukkan penurunan ${Math.abs(diff)} kg. Defisit kalori harian Anda bekerja dengan sangat baik!`,
+          sentiment: "positive",
+        });
+      } else if (diff > 0) {
+        insights.push({
+          id: "weight-gain-trend",
+          iconType: "scale",
+          title: "Terjadi Kenaikan Berat Badan",
+          description: `Terdapat kenaikan +${diff} kg pada ${periodLabel}. Pastikan asupan kalori sesuai target defisit cut.`,
+          sentiment: "warning",
+        });
+      } else {
+        insights.push({
+          id: "weight-stable",
+          iconType: "scale",
+          title: "Berat Badan Stabil",
+          description: `Berat badan Anda berada di angka stabil (${latest} kg). Pertahankan konsistensi defisit kalori & latihan beban.`,
+          sentiment: "positive",
+        });
+      }
     }
   }
 
   // 2. Protein Intake Insight
   const totalProteinLogged = meals.reduce((sum, m) => sum + (m.proteinG || 0), 0);
-  const daysCount = Math.max(meals.length > 0 ? 7 : 1, 1);
+  const daysCount = Math.max(daysInRange, 1);
   const avgProteinDaily = Math.round(totalProteinLogged / daysCount);
   const proteinRatio = Math.round((avgProteinDaily / targets.targetProteinG) * 100);
 
@@ -172,15 +232,15 @@ export function generateWeeklyInsights(
     insights.push({
       id: "protein-high",
       iconType: "trophy",
-      title: "Konsistensi Protein Sangat Baik!",
-      description: `Rata-rata asupan protein Anda mencapai ${avgProteinDaily}g (${proteinRatio}% dari target). Sangat mendukung pemulihan otot pasca-workout!`,
+      title: `Konsistensi Protein Sangat Baik (${periodLabel})`,
+      description: `Rata-rata asupan protein Anda mencapai ${avgProteinDaily}g/hari (${proteinRatio}% dari target). Sangat mendukung pemulihan & pembentukan otot!`,
       sentiment: "positive",
     });
   } else {
     insights.push({
       id: "protein-low",
       iconType: "alert",
-      title: "Asupan Protein Perlu Ditingkatkan",
+      title: `Asupan Protein Perlu Ditingkatkan (${periodLabel})`,
       description: `Rata-rata protein harian Anda baru ${avgProteinDaily}g dari target ${targets.targetProteinG}g. Tambah dada ayam, telur, atau tempe untuk makro optimal.`,
       sentiment: "warning",
     });
@@ -194,16 +254,16 @@ export function generateWeeklyInsights(
     insights.push({
       id: "workout-active",
       iconType: "flame",
-      title: "Pembakaran Kalori & Aktivitas Aktif",
-      description: `Anda berhasil membakar ${totalWorkoutCalories} kCal lewat ${totalWorkoutMinutes} menit sesi olahraga. Energi metabolisme meningkat tajam!`,
+      title: `Pembakaran Kalori & Aktivitas Aktif (${periodLabel})`,
+      description: `Anda berhasil membakar total ${totalWorkoutCalories} kCal lewat ${totalWorkoutMinutes} menit sesi olahraga pada ${periodLabel}. Energi metabolisme meningkat tajam!`,
       sentiment: "positive",
     });
   } else {
     insights.push({
       id: "workout-idle",
       iconType: "activity",
-      title: "Tingkatkan Aktivitas Fisik",
-      description: "Belum ada sesi olahraga terdaftar minggu ini. Jalan santai 20-30 menit atau latihan ringan sangat bagus menjaga TDEE.",
+      title: `Tingkatkan Aktivitas Fisik (${periodLabel})`,
+      description: `Belum ada sesi olahraga terdaftar pada ${periodLabel}. Jalan santai 20-30 menit atau latihan ringan sangat bagus menjaga TDEE.`,
       sentiment: "neutral",
     });
   }
@@ -219,7 +279,7 @@ export function generateWeeklyInsights(
       id: "fat-high",
       iconType: "pie",
       title: "Proporsi Lemak Cukup Tinggi",
-      description: `${fatPercentage}% kalori berasal dari lemak. Kurangi gorengan & minyak berlebih agar defisit kalori lebih maksimal.`,
+      description: `${fatPercentage}% kalori berasal dari lemak. Kurangi gorengan & minyak berlebih agar defisit/surplus kalori lebih terukur.`,
       sentiment: "warning",
     });
   } else if (totalCalories > 0) {

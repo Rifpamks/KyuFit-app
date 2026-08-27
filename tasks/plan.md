@@ -1,36 +1,15 @@
-# Implementation Plan: KyuFit UX Refinement & Date Range Target Scaling
+# Implementation Plan: Goal-Adapted & Dynamic LLM AI Tips
 
 ## Overview
-Refine the KyuFit UI/UX for Date Filtering and Target Aggregation based on user review:
-1. **Daily Mode UX**: Restore the 5-day quick selector strip (`MIN 23`, `SEN 24`, `SEL 25`, `RAB 26`, `KAM 27`) alongside a calendar icon button for backdating beyond 5 days.
-2. **Date Range Target Scaling**: Fix the target mismatch in Monthly, Yearly, and Custom Range modes by displaying both **Rata-Rata Harian (Daily Average)** and **Total Accumulation Proportional Target** ($Target_{daily} \times N_{days}$).
-
-## Architecture & Math Specification
-
-### Target Scaling Formula
-When mode is `monthly`, `yearly`, or `custom` with duration $N$ days (number of days in range):
-- **Period Target Calories** = $Target_{daily} \times N$
-- **Period Target Protein** = $Target_{protein} \times N$
-- **Period Target Carbs** = $Target_{carbs} \times N$
-- **Period Target Fats** = $Target_{fats} \times N$
-
-### Dual-View Display Strategy
-1. **Daily Average Toggle / Subheader**:
-   - Displays **Rata-Rata Harian (Daily Avg)**: e.g. `234.7 kcal / 1779 kcal per hari` (with % completion relative to daily target).
-   - Displays **Total Akumulasi Periode (Period Total)**: e.g. `7,277 kcal / 55,149 kcal total bulan ini`.
-
----
+Adapt AI Tips insights, sentiments, and recommendations according to the user's explicit fitness goal (`"cut" | "bulk" | "maintain"`).
 
 ## Task List
 
-### Phase 1: UX Restoration for Daily Mode
-- [ ] Task 1: Re-integrate 5-day quick selector strip + Calendar Backdate Picker in `DateFilterBar.tsx`
+### Phase 1: Fitness Goal Matrix Integration in `insights.ts`
+- [ ] Task 1: Update `generateWeeklyInsights()` to accept `fitnessGoal` parameter and adapt sentiments (positive/warning/neutral), titles, and descriptions accordingly.
 
-### Phase 2: Backend & Logic Target Scaling
-- [ ] Task 2: Update `/api/logs/daily` response to include `daysInRange`, `periodTargetCalories`, `periodTargetProteinG`, `periodTargetCarbsG`, `periodTargetFatsG`, and `dailyAverages`.
+### Phase 2: Route & Controller Update
+- [ ] Task 2: Pass `user.fitnessGoal` into `generateWeeklyInsights()` inside `/api/user/insights/route.ts`.
 
-### Phase 3: UI Enhancement for Multi-Day Modes
-- [ ] Task 3: Update `page.tsx` Dashboard Cards to display scaled targets & daily averages in Monthly, Yearly, and Custom Range modes.
-
-### Phase 4: Verification
-- [ ] Task 4: Run `npm run build` and verify all date modes.
+### Phase 3: Build Verification & Deployment
+- [ ] Task 3: Execute `npm run build`, verify Cut vs Bulk vs Maintain outputs, commit & push to main.

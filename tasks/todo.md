@@ -1,21 +1,16 @@
-# Task List: UX Refinement & Target Scaling
+# Task List: Goal-Adapted AI Tips
 
-- [ ] Task 1: Re-integrate 5-day quick selector strip + Calendar Backdate Picker
-  - Acceptance: Harian mode displays 5 recent days strip AND calendar picker for backdating.
-  - Verify: Click on day pills and pick backdates in date picker.
-  - Files: `web/src/components/DateFilterBar.tsx`
+- [ ] Task 1: Adapt `generateWeeklyInsights()` for Fitness Goals (`cut`, `bulk`, `maintain`)
+  - Acceptance: Insights sentiments and text dynamically match the user's specific fitness goal.
+  - Verify: Test function with `cut` vs `bulk` goals.
+  - Files: `web/src/lib/insights.ts`
 
-- [ ] Task 2: Backend Target Scaling & Daily Averages
-  - Acceptance: API returns `daysInRange`, scaled period targets, and `dailyAverages`.
-  - Verify: Test `/api/logs/daily?month=2026-07` output.
-  - Files: `web/src/app/api/logs/daily/route.ts`
+- [ ] Task 2: Pass `user.fitnessGoal` in `/api/user/insights/route.ts`
+  - Acceptance: API queries user's goal from DB and forwards to insights generator.
+  - Verify: Curl `/api/user/insights` for cut vs bulk users.
+  - Files: `web/src/app/api/user/insights/route.ts`
 
-- [ ] Task 3: UI Cards Adaptation for Multi-Day Modes
-  - Acceptance: Dashboard displays Rata-rata Harian and Period Totals without showing false "Kelebihan" statistics.
-  - Verify: Check Monthly and Yearly tab cards on `/`.
-  - Files: `web/src/app/page.tsx`
-
-- [ ] Task 4: Full Build Verification & Deploy
-  - Acceptance: `npm run build` succeeds cleanly.
-  - Verify: Execute `npm run build`.
-  - Files: All modified files.
+- [ ] Task 3: Build & Deploy Verification
+  - Acceptance: `npm run build` passes cleanly.
+  - Verify: Execute `npm run build` and push.
+  - Files: All touched files.

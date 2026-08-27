@@ -220,8 +220,9 @@ export default function Home() {
       }
       setWeightLogs(weightJson.data);
 
-      // Fetch User Insights & Target Projection
-      const insightsRes = await fetch("/api/user/insights");
+      // Fetch User Insights & Target Projection for selected date range
+      const insightsUrl = queryUrl.replace("/api/logs/daily?", "/api/user/insights?");
+      const insightsRes = await fetch(insightsUrl);
       const insightsJson = await insightsRes.json();
       if (insightsJson.success) {
         setInsightsData(insightsJson);
@@ -493,12 +494,12 @@ export default function Home() {
           </div>
         )}
 
+        {/* Global Single Source Date Filter Bar */}
+        <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
+
         {/* TAB 1: TODAY (Dashboard & Log Makanan) */}
         {activeTab === "today" && (
           <main className="space-y-4">
-            
-            {/* Modern Flexible Date Filter Bar */}
-            <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
 
             {/* Calorie Card with Progress Ring */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
@@ -1098,9 +1099,6 @@ export default function Home() {
         {/* TAB 4: AI TIPS (Dynamic Deep AI Health Analysis) */}
         {activeTab === "tips" && (
           <main className="space-y-4">
-            
-            {/* Filter Date Bar for AI Tips */}
-            <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
 
             {/* Target Projection Summary Card */}
             {insightsData?.projection && (

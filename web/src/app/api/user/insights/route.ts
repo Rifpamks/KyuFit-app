@@ -9,7 +9,7 @@ import {
   recommendMealSuggestions,
 } from "@/lib/insights";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     let user = await getOrCreateDefaultUser();
 
@@ -32,29 +32,68 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Date 30 days ago for richer weight and trend analysis
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Parse date filter query parameters from URL
+    const { searchParams } = new URL(req.url);
+    const dateParam = searchParams.get("date");
+    const monthParam = searchParams.get("month");
+    const yearParam = searchParams.get("year");
+    const startDateParam = searchParams.get("startDate");
+    const endDateParam = searchParams.get("endDate");
 
-    // Fetch meals, workouts, and weight logs in last 30 days for user
+    let startWIB: Date;
+    let endWIB: Date;
+    let periodLabel = "30 Hari Terakhir";
+
+    if (startDateParam && endDateParam) {
+      startWIB = new Date(`${startDateParam}T00:00:00.000+07:00`);
+      endWIB = new Date(`${endDateParam}T23:59:59.999+07:00`);
+      periodLabel = `${startDateParam} s/d ${endDateParam}`;
+    } else if (monthParam) {
+      const [y, m] = monthParam.split("-").map(Number);
+      startWIB = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0) - 7 * 3600 * 1000);
+      const lastDay = new Date(Date.UTC(y, m, 0)).getDate();
+      endWIB = new Date(Date.UTC(y, m - 1, lastDay, 23, 59, 59, 999) - 7 * 3600 * 1000);
+      
+      const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      periodLabel = `Bulan ${monthNames[m - 1]} ${y}`;
+    } else if (yearParam) {
+      const y = Number(yearParam);
+      startWIB = new Date(Date.UTC(y, 0, 1, 0, 0, 0) - 7 * 3600 * 1000);
+      endWIB = new Date(Date.UTC(y, 11, 31, 23, 59, 59, 999) - 7 * 3600 * 1000);
+      periodLabel = `Tahun ${y}`;
+    } else if (dateParam) {
+      startWIB = new Date(`${dateParam}T00:00:00.000+07:00`);
+      endWIB = new Date(`${dateParam}T23:59:59.999+07:00`);
+      periodLabel = `Hari ${dateParam}`;
+    } else {
+      // Default: Last 30 days
+      endWIB = new Date();
+      startWIB = new Date();
+      startWIB.setDate(startWIB.getDate() - 30);
+    }
+
+    const durationMs = Math.max(endWIB.getTime() - startWIB.getTime(), 1000);
+    const daysInRange = Math.max(Math.round(durationMs / (1000 * 60 * 60 * 24)), 1);
+
+    // Fetch meals, workouts, and weight logs in range for user
     const meals = await prisma.mealLog.findMany({
       where: {
         userId: user.id,
-        timestamp: { gte: thirtyDaysAgo },
+        timestamp: { gte: startWIB, lte: endWIB },
       },
     });
 
     const workouts = await prisma.workoutLog.findMany({
       where: {
         userId: user.id,
-        timestamp: { gte: thirtyDaysAgo },
+        timestamp: { gte: startWIB, lte: endWIB },
       },
     });
 
     const weightLogs = await prisma.weightLog.findMany({
       where: {
         userId: user.id,
-        timestamp: { gte: thirtyDaysAgo },
+        timestamp: { gte: startWIB, lte: endWIB },
       },
       orderBy: { timestamp: "asc" },
     });
@@ -90,7 +129,7 @@ export async function GET() {
       weightLogs
     );
 
-    // 2. Multi-Metric Weekly AI Insights
+    // 2. Multi-Metric Weekly AI Insights (Goal-Adapted & Period-Aware)
     const insights = generateWeeklyInsights(
       meals.map((m) => ({
         calories: m.calories,
@@ -106,7 +145,10 @@ export async function GET() {
         dailyCalorieTarget: user.dailyCalorieTarget,
         targetProteinG: user.targetProteinG,
       },
-      weightLogs
+      weightLogs,
+      user.fitnessGoal,
+      daysInRange,
+      periodLabel
     );
 
     // 3. Today's Remaining Budget for Meal Suggestions
