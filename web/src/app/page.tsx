@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import DateFilterBar, { DateFilterState } from "@/components/DateFilterBar";
 import EnergyBalanceRing from "@/components/EnergyBalanceRing";
 import BmiGauge from "@/components/BmiGauge";
+import BodyCompositionCard from "@/components/BodyCompositionCard";
 import {
   Flame,
   Apple,
@@ -74,6 +75,13 @@ interface DailySummary {
     whatsappNumber: string;
     currentWeightKg?: number | null;
     heightCm?: number | null;
+    age?: number | null;
+    gender?: string | null;
+    activityLevel?: string | null;
+    bodyFatPercent?: number | null;
+    skeletalMuscleMassKg?: number | null;
+    visceralFatLevel?: number | null;
+    inbodyScore?: number | null;
   };
   meals: Meal[];
   workouts: Workout[];
@@ -854,6 +862,9 @@ export default function Home() {
               )}
             </div>
 
+            {/* Body Composition Card */}
+            <BodyCompositionCard user={user} onSuccess={fetchData} />
+
             {/* Weight Quick Stats Bar */}
             {sortedWeightLogs.length > 0 && (
               <div className="grid grid-cols-3 gap-2 text-center bg-white rounded-2xl border border-stone-200 p-3 shadow-xs">
@@ -1323,6 +1334,9 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Body Composition Management Card in Profile */}
+            <BodyCompositionCard user={user} onSuccess={fetchData} />
 
             {/* Quick Actions & Logout */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-2">

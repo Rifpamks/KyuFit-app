@@ -277,7 +277,7 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Optional InBody Section */}
+            {/* Optional Body Composition Section */}
             <div className="pt-1">
               <button
                 type="button"
@@ -285,8 +285,8 @@ export default function OnboardingPage() {
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-orange-50/70 hover:bg-orange-50 border border-orange-200 text-xs font-bold text-orange-900 transition"
               >
                 <span className="flex items-center gap-1.5">
-                  <span>✨</span>
-                  <span>Punya Data InBody / Smart Scale? (Opsional)</span>
+                  <span>📊</span>
+                  <span>Tambah Data Komposisi Tubuh (Opsional)</span>
                 </span>
                 <span className="text-[11px] font-semibold text-orange-600">
                   {showInBody ? "Sembunyikan ▲" : "Isi Data ▼"}
@@ -296,56 +296,56 @@ export default function OnboardingPage() {
               {showInBody && (
                 <div className="mt-2.5 p-3.5 bg-stone-50 border border-stone-200 rounded-xl space-y-3">
                   <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Data komposisi tubuh mengaktifkan formula <strong>Katch-McArdle</strong> (sama dengan mesin InBody gym) untuk hasil BMR & kebutuhan protein yang presisi.
+                    Data bioimpedansi mengaktifkan formula <strong>Katch-McArdle</strong> berbasis Lean Body Mass (LBM) untuk kalkulasi laju metabolisme basal & kebutuhan protein yang lebih presisi.
                   </p>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        Percent Body Fat (%BF)
+                        Persentase Lemak (%BF)
                       </label>
                       <input
                         type="number"
                         step="0.1"
                         value={bodyFatPercent}
                         onChange={(e) => setBodyFatPercent(e.target.value)}
-                        placeholder="e.g. 24.4"
+                        placeholder="misal 24.4"
                         className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        Massa Otot / SMM (kg)
+                        Massa Otot Rangka / SMM (kg)
                       </label>
                       <input
                         type="number"
                         step="0.1"
                         value={skeletalMuscleMassKg}
                         onChange={(e) => setSkeletalMuscleMassKg(e.target.value)}
-                        placeholder="e.g. 31.0"
+                        placeholder="misal 31.0"
                         className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        Visceral Fat (Level)
+                        Lemak Viseral (Level)
                       </label>
                       <input
                         type="number"
                         value={visceralFatLevel}
                         onChange={(e) => setVisceralFatLevel(e.target.value)}
-                        placeholder="e.g. 7"
+                        placeholder="misal 7"
                         className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        InBody Score (Poin)
+                        Skor Komposisi Tubuh (Poin)
                       </label>
                       <input
                         type="number"
                         value={inbodyScore}
                         onChange={(e) => setInbodyScore(e.target.value)}
-                        placeholder="e.g. 73"
+                        placeholder="misal 73"
                         className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
                       />
                     </div>
@@ -436,7 +436,7 @@ export default function OnboardingPage() {
               </div>
               <p className="text-[11px] text-stone-500 leading-relaxed">
                 {calcResult.formulaUsed === "katch_mcardle"
-                  ? `Dihitung dari massa bebas lemak (${calcResult.lbmKg} kg LBM) menggunakan Katch-McArdle Equation (sama dengan mesin InBody gym). Target protein dioptimalkan untuk proteksi otot aktif.`
+                  ? `Dihitung dari massa bebas lemak (${calcResult.lbmKg} kg LBM) menggunakan Katch-McArdle Equation berbasis komposisi tubuh. Target protein dioptimalkan untuk proteksi otot aktif.`
                   : "Target kalori dihitung menggunakan Mifflin-St Jeor Equation, dan target protein dialokasikan secara ilmiah berdasarkan gram per kilogram berat badan (bukan persentase statis)."}
               </p>
             </div>
@@ -445,7 +445,7 @@ export default function OnboardingPage() {
             <div className="grid grid-cols-2 gap-2.5">
               <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-center">
                 <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">
-                  {calcResult.formulaUsed === "katch_mcardle" ? "BMR (InBody)" : "RMR (Basal)"}
+                  {calcResult.formulaUsed === "katch_mcardle" ? "BMR (Komposisi)" : "RMR (Basal)"}
                 </div>
                 <div className="text-lg font-black text-stone-900 mt-0.5">{calcResult.rmr}</div>
                 <div className="text-[10px] text-stone-500">kcal/hari</div>

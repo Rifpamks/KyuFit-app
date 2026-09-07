@@ -165,7 +165,14 @@ export async function GET(req: Request) {
           email: resolvedUser.email,
           whatsappNumber: resolvedUser.whatsappNumber,
           currentWeightKg: resolvedUser.currentWeightKg,
-          heightCm: resolvedUser.heightCm
+          heightCm: resolvedUser.heightCm,
+          age: resolvedUser.age,
+          gender: resolvedUser.gender,
+          activityLevel: resolvedUser.activityLevel,
+          bodyFatPercent: resolvedUser.bodyFatPercent,
+          skeletalMuscleMassKg: resolvedUser.skeletalMuscleMassKg,
+          visceralFatLevel: resolvedUser.visceralFatLevel,
+          inbodyScore: resolvedUser.inbodyScore
         },
         meals: mealLogs,
         workouts: workoutLogs,

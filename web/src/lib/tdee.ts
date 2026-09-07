@@ -88,7 +88,7 @@ export function calculateAll(options: CalculateTargetsOptions): CalculationResul
     lbmKg = Number((weightKg * (1 - bodyFatPercent / 100)).toFixed(1));
     rmr = Math.round(calculateRMRKatchMcArdle(lbmKg));
     formulaUsed = 'katch_mcardle';
-    formulaName = 'Katch-McArdle (InBody LBM Edition)';
+    formulaName = 'Katch-McArdle (Komposisi LBM)';
   } else {
     rmr = Math.round(calculateRMRMifflin(weightKg, heightCm, age, gender));
   }
@@ -165,3 +165,6 @@ export function calculateAll(options: CalculateTargetsOptions): CalculationResul
     warningLevel,
   };
 }
+
+export const calculateTargetCaloriesAndMacros = calculateAll;
+
