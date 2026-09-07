@@ -65,12 +65,10 @@ export default function OnboardingPage() {
   const [heightCm, setHeightCm] = useState("");
   const [currentWeightKg, setCurrentWeightKg] = useState("");
 
-  // Step 1 - Optional InBody / Advanced Body Composition
+  // Step 1 - Optional Advanced Body Composition
   const [showInBody, setShowInBody] = useState(false);
   const [bodyFatPercent, setBodyFatPercent] = useState("");
   const [skeletalMuscleMassKg, setSkeletalMuscleMassKg] = useState("");
-  const [visceralFatLevel, setVisceralFatLevel] = useState("");
-  const [inbodyScore, setInbodyScore] = useState("");
 
   // Step 2
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
@@ -112,8 +110,6 @@ export default function OnboardingPage() {
             goal: fitnessGoal,
             bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : null,
             skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : null,
-            visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : null,
-            inbodyScore: inbodyScore ? parseInt(inbodyScore, 10) : null,
           }),
         });
         const data = await res.json();
@@ -153,8 +149,6 @@ export default function OnboardingPage() {
           fitnessGoal,
           bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : null,
           skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : null,
-          visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : null,
-          inbodyScore: inbodyScore ? parseInt(inbodyScore, 10) : null,
         }),
       });
 
@@ -285,18 +279,18 @@ export default function OnboardingPage() {
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-orange-50/70 hover:bg-orange-50 border border-orange-200 text-xs font-bold text-orange-900 transition"
               >
                 <span className="flex items-center gap-1.5">
-                  <span>📊</span>
+                  <Activity className="h-3.5 w-3.5 text-orange-500" />
                   <span>Tambah Data Komposisi Tubuh (Opsional)</span>
                 </span>
                 <span className="text-[11px] font-semibold text-orange-600">
-                  {showInBody ? "Sembunyikan ▲" : "Isi Data ▼"}
+                  {showInBody ? "Sembunyikan" : "Isi Data"}
                 </span>
               </button>
 
               {showInBody && (
                 <div className="mt-2.5 p-3.5 bg-stone-50 border border-stone-200 rounded-xl space-y-3">
                   <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Data bioimpedansi mengaktifkan formula <strong>Katch-McArdle</strong> berbasis Lean Body Mass (LBM) untuk kalkulasi laju metabolisme basal & kebutuhan protein yang lebih presisi.
+                    Data persentase lemak mengaktifkan formula <strong>Katch-McArdle</strong> berbasis Lean Body Mass (LBM) untuk kalkulasi laju metabolisme basal & kebutuhan protein yang lebih presisi.
                   </p>
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
@@ -325,31 +319,43 @@ export default function OnboardingPage() {
                         className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        Lemak Viseral (Level)
-                      </label>
-                      <input
-                        type="number"
-                        value={visceralFatLevel}
-                        onChange={(e) => setVisceralFatLevel(e.target.value)}
-                        placeholder="misal 7"
-                        className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                        Skor Komposisi Tubuh (Poin)
-                      </label>
-                      <input
-                        type="number"
-                        value={inbodyScore}
-                        onChange={(e) => setInbodyScore(e.target.value)}
-                        placeholder="misal 73"
-                        className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
-                      />
-                    </div>
                   </div>
+
+                  {/* Auto-Calculated Metrics Real-Time Display (No Emojis) */}
+                  {bodyFatPercent && parseFloat(bodyFatPercent) > 0 && currentWeightKg && parseFloat(currentWeightKg) > 0 && (
+                    <div className="mt-2 p-3 bg-white border border-stone-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-stone-700">
+                        <span>Hasil Kalkulasi Komposisi Tubuh:</span>
+                        <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                          Terhitung Otomatis
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                        <div className="p-2 bg-stone-50 rounded-lg border border-stone-100">
+                          <div className="text-[10px] text-stone-400 font-semibold uppercase">Fat Mass</div>
+                          <div className="text-sm font-bold text-stone-900 mt-0.5">
+                            {(parseFloat(currentWeightKg) * (parseFloat(bodyFatPercent) / 100)).toFixed(1)}{" "}
+                            <span className="text-[10px] font-normal text-stone-500">kg</span>
+                          </div>
+                        </div>
+                        <div className="p-2 bg-stone-50 rounded-lg border border-stone-100">
+                          <div className="text-[10px] text-stone-400 font-semibold uppercase">LBM</div>
+                          <div className="text-sm font-bold text-stone-900 mt-0.5">
+                            {(parseFloat(currentWeightKg) * (1 - parseFloat(bodyFatPercent) / 100)).toFixed(1)}{" "}
+                            <span className="text-[10px] font-normal text-stone-500">kg</span>
+                          </div>
+                        </div>
+                        <div className="p-2 bg-stone-50 rounded-lg border border-stone-100">
+                          <div className="text-[10px] text-stone-400 font-semibold uppercase">BMI</div>
+                          <div className="text-sm font-bold text-stone-900 mt-0.5">
+                            {heightCm && parseFloat(heightCm) > 0
+                              ? (parseFloat(currentWeightKg) / Math.pow(parseFloat(heightCm) / 100, 2)).toFixed(1)
+                              : "-"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

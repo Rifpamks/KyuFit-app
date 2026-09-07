@@ -32,8 +32,6 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
   const [weightKg, setWeightKg] = useState(user.currentWeightKg?.toString() || "");
   const [bodyFatPercent, setBodyFatPercent] = useState(user.bodyFatPercent?.toString() || "");
   const [skeletalMuscleMassKg, setSkeletalMuscleMassKg] = useState(user.skeletalMuscleMassKg?.toString() || "");
-  const [visceralFatLevel, setVisceralFatLevel] = useState(user.visceralFatLevel?.toString() || "");
-  const [bodyScore, setBodyScore] = useState(user.inbodyScore?.toString() || "");
   const [recalculate, setRecalculate] = useState(true);
 
   const [loading, setLoading] = useState(false);
@@ -46,10 +44,24 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
     user.bodyFatPercent > 0
   );
 
-  // Calculate Lean Body Mass (LBM) if weight and body fat are available
+  // Auto-calculated values based on current user or input
   const weightVal = user.currentWeightKg || (weightKg ? parseFloat(weightKg) : 0);
   const bfVal = user.bodyFatPercent || (bodyFatPercent ? parseFloat(bodyFatPercent) : 0);
+  const heightVal = user.heightCm || 170;
+
+  const fatMassVal = weightVal > 0 && bfVal > 0 ? Number((weightVal * (bfVal / 100)).toFixed(1)) : null;
   const lbmVal = weightVal > 0 && bfVal > 0 ? Number((weightVal * (1 - bfVal / 100)).toFixed(1)) : null;
+  const bmiVal = weightVal > 0 && heightVal > 0 ? Number((weightVal / Math.pow(heightVal / 100, 2)).toFixed(1)) : null;
+
+  // Live calculation for the form input
+  const formWeightNum = parseFloat(weightKg);
+  const formBfNum = parseFloat(bodyFatPercent);
+  const hasFormLiveCalc = !isNaN(formWeightNum) && formWeightNum > 0 && !isNaN(formBfNum) && formBfNum > 0;
+  const formFatMass = hasFormLiveCalc ? (formWeightNum * (formBfNum / 100)).toFixed(1) : null;
+  const formLbm = hasFormLiveCalc ? (formWeightNum * (1 - formBfNum / 100)).toFixed(1) : null;
+  const formBmi = !isNaN(formWeightNum) && formWeightNum > 0 && heightVal > 0
+    ? (formWeightNum / Math.pow(heightVal / 100, 2)).toFixed(1)
+    : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +77,6 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
           weightKg: weightKg ? parseFloat(weightKg) : undefined,
           bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : undefined,
           skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : undefined,
-          visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : undefined,
-          bodyScore: bodyScore ? parseInt(bodyScore, 10) : undefined,
           recalculateTargets: recalculate,
         }),
       });
@@ -113,7 +123,7 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
             </h3>
             <p className="text-[11px] text-stone-500">
               {hasData
-                ? "Bioimpedansi & Analisis Jaringan Otot / Lemak"
+                ? "Bioimpedansi & Analisis Massa Tubuh"
                 : "Tingkatkan akurasi kalori dengan data smart scale"}
             </p>
           </div>
@@ -137,7 +147,7 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
         </button>
       </div>
 
-      {/* Snapshot Cards (Always visible or when collapsed) */}
+      {/* Snapshot Cards (No Emojis) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
         <div className="p-3 bg-stone-50/80 border border-stone-200/70 rounded-xl text-center">
           <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">
@@ -151,32 +161,32 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
 
         <div className="p-3 bg-stone-50/80 border border-stone-200/70 rounded-xl text-center">
           <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">
-            Massa Otot
+            Fat Mass
+          </span>
+          <span className="text-base font-black text-stone-900 mt-0.5 block">
+            {fatMassVal ? `${fatMassVal} kg` : "-"}
+          </span>
+          <span className="text-[9px] text-stone-500 font-medium">Massa Lemak</span>
+        </div>
+
+        <div className="p-3 bg-stone-50/80 border border-stone-200/70 rounded-xl text-center">
+          <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">
+            LBM (Bebas Lemak)
+          </span>
+          <span className="text-base font-black text-stone-900 mt-0.5 block">
+            {lbmVal ? `${lbmVal} kg` : "-"}
+          </span>
+          <span className="text-[9px] text-stone-500 font-medium">Lean Body Mass</span>
+        </div>
+
+        <div className="p-3 bg-stone-50/80 border border-stone-200/70 rounded-xl text-center">
+          <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">
+            Massa Otot (SMM)
           </span>
           <span className="text-base font-black text-stone-900 mt-0.5 block">
             {user.skeletalMuscleMassKg ? `${user.skeletalMuscleMassKg} kg` : "-"}
           </span>
           <span className="text-[9px] text-stone-500 font-medium">Skeletal Muscle</span>
-        </div>
-
-        <div className="p-3 bg-stone-50/80 border border-stone-200/70 rounded-xl text-center">
-          <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">
-            Lemak Viseral
-          </span>
-          <span className="text-base font-black text-stone-900 mt-0.5 block">
-            {user.visceralFatLevel ? `Lvl ${user.visceralFatLevel}` : "-"}
-          </span>
-          <span className="text-[9px] text-stone-500 font-medium">Visceral Level</span>
-        </div>
-
-        <div className="p-3 bg-stone-50/80 border border-stone-200/70 rounded-xl text-center">
-          <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">
-            Skor Tubuh
-          </span>
-          <span className="text-base font-black text-orange-600 mt-0.5 block">
-            {user.inbodyScore ? `${user.inbodyScore}` : "-"}
-          </span>
-          <span className="text-[9px] text-stone-500 font-medium">Body Score</span>
         </div>
       </div>
 
@@ -185,7 +195,7 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
         <div className="flex items-center justify-between px-3.5 py-2 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs text-emerald-900">
           <span className="flex items-center gap-1.5 font-semibold">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <span>Massa Bebas Lemak (LBM): <strong>{lbmVal} kg</strong></span>
+            <span>Massa Bebas Lemak (LBM): <strong>{lbmVal} kg</strong> • BMI: <strong>{bmiVal}</strong></span>
           </span>
           <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">
             Katch-McArdle Active
@@ -213,13 +223,13 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
       {isOpen && (
         <form onSubmit={handleSubmit} className="pt-2 border-t border-stone-100 space-y-3.5">
           <p className="text-[11px] text-stone-500 leading-relaxed">
-            Perbarui data dari hasil timbangan pintar gym atau klinik. Sistem akan secara otomatis mengkalkulasi ulang kebutuhan kalori & makro berdasarkan formula sains Katch-McArdle.
+            Perbarui data dari hasil timbangan bioimpedansi. Sistem akan secara otomatis mengkalkulasi Fat Mass, LBM, BMI, dan kebutuhan kalori & makronutrisi harian berdasarkan formula sains Katch-McArdle.
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2.5">
             <div>
               <label className="block text-[11px] font-semibold text-stone-600 mb-1 flex items-center gap-1">
-                <Scale className="h-3 w-3 text-stone-400" /> Berat Badan (kg)
+                <Scale className="h-3 w-3 text-stone-400" /> Berat (kg)
               </label>
               <input
                 type="number"
@@ -233,7 +243,7 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
 
             <div>
               <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                Persentase Lemak (%BF)
+                Lemak (%BF)
               </label>
               <input
                 type="number"
@@ -247,7 +257,7 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
 
             <div>
               <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                Massa Otot Rangka / SMM (kg)
+                Massa Otot / SMM (kg)
               </label>
               <input
                 type="number"
@@ -258,33 +268,39 @@ export default function BodyCompositionCard({ user, onSuccess }: BodyComposition
                 className="w-full bg-stone-50 border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
               />
             </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                Lemak Viseral (Level)
-              </label>
-              <input
-                type="number"
-                value={visceralFatLevel}
-                onChange={(e) => setVisceralFatLevel(e.target.value)}
-                placeholder="misal 7"
-                className="w-full bg-stone-50 border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
-              />
-            </div>
-
-            <div className="col-span-2">
-              <label className="block text-[11px] font-semibold text-stone-600 mb-1">
-                Skor Komposisi Tubuh (1-100)
-              </label>
-              <input
-                type="number"
-                value={bodyScore}
-                onChange={(e) => setBodyScore(e.target.value)}
-                placeholder="misal 73"
-                className="w-full bg-stone-50 border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
-              />
-            </div>
           </div>
+
+          {/* Form Live Calculation Preview (No Emojis) */}
+          {hasFormLiveCalc && (
+            <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-bold text-stone-700">
+                <span>Hasil Kalkulasi Otomatis:</span>
+                <span className="text-[10px] font-semibold text-orange-600 bg-orange-100/70 px-2 py-0.5 rounded">
+                  Live Preview
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                <div className="p-2 bg-white rounded-lg border border-stone-200/80">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase">Fat Mass</div>
+                  <div className="text-sm font-bold text-stone-900 mt-0.5">
+                    {formFatMass} <span className="text-[10px] font-normal text-stone-500">kg</span>
+                  </div>
+                </div>
+                <div className="p-2 bg-white rounded-lg border border-stone-200/80">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase">LBM</div>
+                  <div className="text-sm font-bold text-stone-900 mt-0.5">
+                    {formLbm} <span className="text-[10px] font-normal text-stone-500">kg</span>
+                  </div>
+                </div>
+                <div className="p-2 bg-white rounded-lg border border-stone-200/80">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase">BMI</div>
+                  <div className="text-sm font-bold text-stone-900 mt-0.5">
+                    {formBmi || "-"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Toggle Auto-Recalculate */}
           <label className="flex items-center gap-2 cursor-pointer pt-1 text-xs text-stone-700 select-none">
