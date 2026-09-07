@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import DateFilterBar, { DateFilterState } from "@/components/DateFilterBar";
+import DateStrip from "@/components/DateStrip";
+import HeroCalorieCard from "@/components/HeroCalorieCard";
+import QuickActionModal from "@/components/QuickActionModal";
 import EnergyBalanceRing from "@/components/EnergyBalanceRing";
 import BmiGauge from "@/components/BmiGauge";
 import BodyCompositionCard from "@/components/BodyCompositionCard";
@@ -25,7 +28,13 @@ import {
   ChevronRight,
   Info,
   Zap,
-  Target
+  Target,
+  Plus,
+  Utensils,
+  MessageSquare,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import {
   AreaChart,
@@ -126,6 +135,12 @@ export default function Home() {
   
   // Active Navigation Tab State (5 Tabs)
   const [activeTab, setActiveTab] = useState<MainTab>("today");
+
+  // Quick Action Modal State (Center + FAB)
+  const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
+  const [isTargetDetailsOpen, setIsTargetDetailsOpen] = useState(false);
+  const [showMealForm, setShowMealForm] = useState(false);
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
 
   // Date State with Flexible Modes (Daily, Monthly, Yearly, Custom)
   const [dateFilter, setDateFilter] = useState<DateFilterState>({
@@ -414,15 +429,19 @@ export default function Home() {
     }
   };
 
-  const getDaysList = () => {
-    const days = [];
-    const today = new Date();
-    for (let i = 4; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(today.getDate() - i);
-      days.push(d);
+  const handleQuickActionSelect = (action: "food" | "workout" | "weight" | "whatsapp") => {
+    if (action === "food") {
+      setActiveTab("today");
+      setShowMealForm(true);
+    } else if (action === "workout") {
+      setActiveTab("workout");
+    } else if (action === "weight") {
+      setActiveTab("progress");
+    } else if (action === "whatsapp") {
+      const botNumber = (process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || "6285139362618").replace(/[^0-9]/g, "");
+      const waUrl = `https://wa.me/${botNumber}?text=${encodeURIComponent("Halo KyuFit!")}`;
+      window.open(waUrl, "_blank");
     }
-    return days;
   };
 
   if (!mounted) return null;
@@ -455,22 +474,12 @@ export default function Home() {
     workoutCalories: Math.round(burnedCalories / (activeDaysCount || 1)),
   };
 
-  const scaledTargets = summaryData?.summary.scaledTargets || {
-    calories: user.dailyCalorieTarget * daysInRange,
-    proteinG: user.targetProteinG * daysInRange,
-    carbsG: user.targetCarbsG * daysInRange,
-    fatsG: user.targetFatsG * daysInRange,
-  };
-
   // For multi-day mode, evaluate percentages & remaining calories using daily averages
   const activeCalories = isMultiDay ? dailyAvg.calories : consumedCalories;
   const activeBurned = isMultiDay ? dailyAvg.workoutCalories : burnedCalories;
   const activeTarget = targetCalories;
 
   const remainingCalories = activeTarget - activeCalories + activeBurned;
-  const isOverBudget = remainingCalories < 0;
-  const displayRemaining = Math.abs(remainingCalories);
-  const caloriePercent = Math.min(100, Math.round((activeCalories / activeTarget) * 100));
 
   const consumedProtein = summaryData?.summary.proteinG || 0;
   const consumedCarbs = summaryData?.summary.carbsG || 0;
@@ -505,40 +514,32 @@ export default function Home() {
   }));
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-sans antialiased pb-24">
+    <div className="min-h-screen bg-[#FAFAF9] text-stone-900 font-sans antialiased pb-28">
       
-      {/* Centered Mobile Wrapper Container (576px max width) */}
-      <div className="mx-auto max-w-xl px-4 pt-5 space-y-4">
+      {/* Centered Mobile-First Container (Max 448px width, perfectly matching iOS/Android app reference) */}
+      <div className="mx-auto max-w-md px-4 pt-4 space-y-3.5">
         
-        {/* App Header */}
-        <header className="flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl border border-stone-200 shadow-sm">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-orange-500 flex items-center justify-center text-white text-lg font-black shadow-sm">
-              🐱
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-bold text-stone-900 tracking-tight">KyuFit</span>
-                <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                  v2.0
-                </span>
-              </div>
-              <p className="text-[11px] text-stone-500 font-medium">Asisten Nutrisi WhatsApp</p>
-            </div>
+        {/* App Header (Clean brand name + User avatar circle, exactly like reference) */}
+        <header className="flex items-center justify-between py-1 px-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xl font-black tracking-tight text-emerald-800">
+              kyu<span className="text-orange-500">fit</span>
+            </span>
           </div>
 
           <button
+            type="button"
             onClick={() => setActiveTab("profile")}
-            className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+            className="h-10 w-10 rounded-full bg-white border border-stone-200/80 shadow-2xs flex items-center justify-center text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition active:scale-95"
+            title="Profil Pengguna"
           >
-            <User className="h-4 w-4 text-orange-500" />
-            <span className="hidden sm:inline">Profil</span>
+            <User className="h-5 w-5" />
           </button>
         </header>
 
         {/* Global Error Banner */}
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 flex items-start gap-3 text-xs">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 flex items-start gap-3 text-xs">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">Kendala Sistem: </span>
@@ -553,217 +554,254 @@ export default function Home() {
           </div>
         )}
 
+        {/* 7-Day Horizontal Date Strip (Replaces old clunky dropdown) */}
+        <div className="bg-white rounded-3xl p-2 border border-stone-100 shadow-xs">
+          <DateStrip
+            selectedDate={dateFilter.date}
+            onSelectDate={(date) => {
+              setDateFilter((prev) => ({
+                ...prev,
+                mode: "daily",
+                date,
+                month: date.slice(0, 7),
+                year: date.slice(0, 4),
+                startDate: date,
+                endDate: date
+              }));
+            }}
+          />
+
+          {/* Optional Filter Toggle for Advanced Multi-Day / Monthly Analytics */}
+          <div className="px-2 pt-1 pb-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+              className="text-[10px] font-semibold text-stone-400 hover:text-stone-600 flex items-center gap-1 transition"
+            >
+              <SlidersHorizontal className="h-3 w-3" />
+              <span>{showAdvancedFilter ? "Tutup Filter Rentang" : "Filter Rentang Waktu"}</span>
+            </button>
+          </div>
+
+          {showAdvancedFilter && (
+            <div className="pt-2 border-t border-stone-100 mt-1 animate-in fade-in duration-150">
+              <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
+            </div>
+          )}
+        </div>
+
         {/* TAB 1: TODAY (Dashboard & Log Makanan) */}
         {activeTab === "today" && (
-          <main className="space-y-4">
+          <main className="space-y-3.5 animate-in fade-in duration-200">
             
-            {/* Filter Date Bar for Today Menu */}
-            <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
-
-            {/* Dynamic Concentric Dual-Arc Energy Balance Ring */}
-            <EnergyBalanceRing
-              targetCalories={activeTarget}
+            {/* Hero Calorie Card with Flame Progress Ring and 2x2 MacroMiniRings */}
+            <HeroCalorieCard
               consumedCalories={activeCalories}
+              targetCalories={activeTarget}
+              remainingCalories={remainingCalories}
               burnedCalories={activeBurned}
+              protein={{
+                current: activeProtein,
+                target: user.targetProteinG,
+              }}
+              carbs={{
+                current: activeCarbs,
+                target: user.targetCarbsG,
+              }}
+              fat={{
+                current: activeFats,
+                target: user.targetFatsG,
+              }}
               isMultiDay={isMultiDay}
-              daysInRange={daysInRange}
               activeDaysCount={activeDaysCount}
-              totalConsumedCalories={consumedCalories}
-              fitnessGoal={user.fitnessGoal}
+              onOpenDetails={() => setIsTargetDetailsOpen(!isTargetDetailsOpen)}
             />
 
-            {/* WhatsApp Bot Gateway Live Card */}
-            <div className="bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-white rounded-2xl border border-emerald-200/80 p-4 shadow-xs">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-xl shadow-xs shrink-0">
-                    🐱
+            {/* Target Details Collapsible Section */}
+            {isTargetDetailsOpen && (
+              <div className="bg-white rounded-3xl p-5 border border-stone-100 shadow-xs space-y-3 animate-in slide-in-from-top-3 duration-200">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-emerald-600" />
+                    <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+                      Detail Rincian Energi & Goals
+                    </h4>
+                  </div>
+                  <button
+                    onClick={() => setIsTargetDetailsOpen(false)}
+                    className="text-stone-400 hover:text-stone-600 p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                    <span className="text-[10px] text-stone-400 font-semibold block">Goal Nutrisi</span>
+                    <span className="font-extrabold text-stone-800 capitalize">{user.fitnessGoal}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                    <span className="text-[10px] text-stone-400 font-semibold block">Budget Harian</span>
+                    <span className="font-extrabold text-stone-800">{user.dailyCalorieTarget} kcal</span>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-stone-500 leading-relaxed bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                  Target kalori ini dikalibrasi secara ilmiah berdasarkan estimasi TDEE dan profil berat badan Anda untuk mencapai hasil berkelanjutan.
+                </div>
+              </div>
+            )}
+
+            {/* KyuBot WhatsApp Gateway Banner */}
+            <div className="bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-white rounded-3xl border border-emerald-200/70 p-4 shadow-2xs">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl bg-emerald-700 flex items-center justify-center text-white shadow-xs shrink-0">
+                    <MessageSquare className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-bold text-stone-900">KyuBot WhatsApp Assistant</span>
+                      <span className="text-xs font-bold text-stone-900">KyuBot Assistant</span>
                       <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Aktif 24/7
+                        WhatsApp
                       </span>
                     </div>
                     <p className="text-[11px] text-stone-600 mt-0.5">
-                      Kirim foto makanan ke <strong>KyuBot</strong> via WhatsApp untuk analisis nutrisi & pencatatan kalori otomatis!
+                      Kirim foto piring untuk kalkulasi kalori & pencatatan otomatis!
                     </p>
                   </div>
                 </div>
                 <a
-                  href={`https://wa.me/${(process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || '6285139362618').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo Kyu! 🐱')}`}
+                  href={`https://wa.me/${(process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || '6285139362618').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo KyuFit!')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-xs flex items-center gap-1"
+                  className="shrink-0 bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-xs flex items-center gap-1"
                 >
-                  <span>Chat KyuBot</span>
+                  <span>Chat</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </a>
               </div>
             </div>
 
-            {/* Kalg.ai Style Macro Breakdown (4 Pill Cards) */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">Rincian Makronutrisi</h3>
-                {isMultiDay && (
-                  <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                    {activeDaysCount > 0 ? `Rata-rata (${activeDaysCount} hari aktif)` : 'Belum ada data'}
-                  </span>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                
-                {/* Protein */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100">
-                  <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm shrink-0">
-                    💪
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-stone-900">{activeProtein} / {user.targetProteinG}g</div>
-                    <div className="text-[10px] font-medium text-stone-400">
-                      {isMultiDay ? `Protein (${activeProtein}g/hr • Total ${consumedProtein}g)` : "Protein"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Karbohidrat */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100">
-                  <div className="h-9 w-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm shrink-0">
-                    🌾
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-stone-900">{activeCarbs} / {user.targetCarbsG}g</div>
-                    <div className="text-[10px] font-medium text-stone-400">
-                      {isMultiDay ? `Karbo (${activeCarbs}g/hr • Total ${consumedCarbs}g)` : "Karbohidrat"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lemak */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100">
-                  <div className="h-9 w-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-sm shrink-0">
-                    🥑
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-stone-900">{activeFats} / {user.targetFatsG}g</div>
-                    <div className="text-[10px] font-medium text-stone-400">
-                      {isMultiDay ? `Lemak (${activeFats}g/hr • Total ${consumedFats}g)` : "Lemak"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Energi Total */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-100">
-                  <div className="h-9 w-9 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-sm shrink-0">
-                    ⚡
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-stone-900">{activeProtein * 4 + activeCarbs * 4 + activeFats * 9} kcal</div>
-                    <div className="text-[10px] font-medium text-stone-400">{isMultiDay ? `Avg Makro (${activeDaysCount} hr)` : "Total Makro"}</div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Form Input Catat Makanan */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
-              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider mb-3 flex items-center gap-1.5">
-                <Apple className="h-4 w-4 text-orange-500" />
-                Catat Makanan Harian
-              </h3>
-              
-              <form onSubmit={handleAddMeal} className="space-y-3">
+            {/* Daily Log Section (Matching reference app layout & typography) */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between px-1">
                 <div>
-                  <label className="block text-[11px] font-semibold text-stone-600 mb-1">Nama Makanan</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dada Ayam Bakar + Nasi Merah"
-                    value={foodName}
-                    onChange={(e) => setFoodName(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-stone-600 mb-1">Kalori (kcal)</label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="e.g. 450"
-                      value={calories}
-                      onChange={(e) => setCalories(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-stone-600 mb-1">Protein (g)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 35"
-                      value={protein}
-                      onChange={(e) => setProtein(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-stone-600 mb-1">Karbo (g)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 40"
-                      value={carbs}
-                      onChange={(e) => setCarbs(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-stone-600 mb-1">Lemak (g)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 8"
-                      value={fats}
-                      onChange={(e) => setFats(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
-                    />
-                  </div>
+                  <h3 className="text-base font-bold text-stone-900 tracking-tight">Daily Log</h3>
+                  <p className="text-xs text-stone-400 font-medium">
+                    {summaryData?.meals.length || 0} meals logged
+                  </p>
                 </div>
 
                 <button
-                  type="submit"
-                  disabled={isSubmittingMeal}
-                  className="w-full mt-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                  type="button"
+                  onClick={() => setShowMealForm(!showMealForm)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 px-3 py-1.5 rounded-xl transition active:scale-95"
                 >
-                  {isSubmittingMeal ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : showMealSuccess ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Berhasil Dicatat!
-                    </>
-                  ) : (
-                    "Tambah Makanan"
-                  )}
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>{showMealForm ? "Tutup Form" : "Tambah Manual"}</span>
                 </button>
-              </form>
-            </div>
-
-            {/* List Catatan Makanan Harian */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3 border-b border-stone-100 pb-2">
-                <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">
-                  Catatan Makanan ({summaryData?.meals.length || 0})
-                </h3>
-                <span className="text-[10px] text-stone-400 font-medium">WhatsApp / Web</span>
               </div>
 
+              {/* Form Input Catat Makanan (Collapsible) */}
+              {showMealForm && (
+                <div className="bg-white rounded-3xl border border-stone-200/80 p-5 shadow-xs space-y-3 animate-in slide-in-from-top-2 duration-150">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
+                      <Utensils className="h-3.5 w-3.5 text-orange-500" />
+                      Input Makanan Manual
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowMealForm(false)}
+                      className="text-stone-400 hover:text-stone-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  <form onSubmit={handleAddMeal} className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">Nama Makanan</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Dada Ayam Bakar + Nasi Merah"
+                        value={foodName}
+                        onChange={(e) => setFoodName(e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-600 mb-1">Kalori (kcal)</label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="e.g. 450"
+                          value={calories}
+                          onChange={(e) => setCalories(e.target.value)}
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-600 mb-1">Protein (g)</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 35"
+                          value={protein}
+                          onChange={(e) => setProtein(e.target.value)}
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-600 mb-1">Net Carbs (g)</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 40"
+                          value={carbs}
+                          onChange={(e) => setCarbs(e.target.value)}
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-600 mb-1">Lemak (g)</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 8"
+                          value={fats}
+                          onChange={(e) => setFats(e.target.value)}
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingMeal}
+                      className="w-full mt-2 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-bold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      {isSubmittingMeal ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : showMealSuccess ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Berhasil Dicatat!
+                        </>
+                      ) : (
+                        "Simpan Makanan"
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* List Catatan Makanan */}
               {summaryData?.meals && summaryData.meals.length > 0 ? (
                 <div className="space-y-2.5">
                   {summaryData.meals.map((meal) => {
@@ -774,33 +812,38 @@ export default function Home() {
                     return (
                       <div 
                         key={meal.id} 
-                        className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 flex flex-col justify-between"
+                        className="p-3.5 rounded-2xl bg-white border border-stone-100 shadow-2xs flex flex-col justify-between transition hover:border-stone-200"
                       >
                         <div className="flex justify-between items-start">
-                          <div>
-                            <div className="text-xs font-bold text-stone-900">
-                              {meal.foodName}
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-2xl bg-orange-50 border border-orange-100/80 flex items-center justify-center text-orange-600 shrink-0">
+                              <Utensils className="h-4 w-4" />
                             </div>
-                            <div className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5">
-                              <Clock className="h-3 w-3" /> {time} WIB
+                            <div>
+                              <div className="text-xs font-bold text-stone-900">
+                                {meal.foodName}
+                              </div>
+                              <div className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5">
+                                <Clock className="h-3 w-3" /> {time} WIB
+                              </div>
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold text-orange-600">
+                            <span className="text-xs font-extrabold text-stone-900">
                               {meal.calories} <span className="text-[10px] text-stone-400 font-medium">kcal</span>
                             </span>
                             <button
                               onClick={() => handleDeleteMeal(meal.id)}
                               title="Hapus log makanan"
-                              className="p-1 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition"
+                              className="p-1 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition"
                             >
                               <X className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
 
-                        <div className="mt-2 pt-2 border-t border-stone-200/60 flex gap-3 text-[10px] text-stone-500 font-medium">
+                        <div className="mt-2.5 pt-2 border-t border-stone-100/80 flex gap-3 text-[10px] text-stone-500 font-medium">
                           <span>P: {meal.proteinG}g</span>
                           <span>K: {meal.carbsG}g</span>
                           <span>L: {meal.fatsG}g</span>
@@ -810,10 +853,12 @@ export default function Home() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-8 text-stone-400">
-                  <div className="text-2xl mb-1">🍽️</div>
-                  <p className="text-xs font-semibold text-stone-600">Belum ada makanan pada tanggal ini</p>
-                  <p className="text-[11px] text-stone-400 mt-0.5">Kirim foto makanan ke WhatsApp atau gunakan form di atas!</p>
+                <div className="text-center py-8 text-stone-400 bg-white rounded-3xl border border-stone-100 shadow-2xs">
+                  <div className="h-11 w-11 rounded-2xl bg-stone-50 border border-stone-100 text-stone-400 flex items-center justify-center mx-auto mb-2.5">
+                    <Utensils className="h-5 w-5 text-stone-400" />
+                  </div>
+                  <p className="text-xs font-bold text-stone-700">Belum ada makanan pada tanggal ini</p>
+                  <p className="text-[11px] text-stone-400 mt-0.5">Kirim foto ke WhatsApp atau catat manual!</p>
                 </div>
               )}
             </div>
@@ -823,12 +868,12 @@ export default function Home() {
 
         {/* TAB 2: PROGRESS (Grafik Berat Badan & Target Projection) */}
         {activeTab === "progress" && (
-          <main className="space-y-4">
+          <main className="space-y-4 animate-in fade-in duration-200">
             
             {/* Quick Weight Input Form */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
               <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
-                <Scale className="h-4 w-4 text-orange-500" />
+                <Scale className="h-4 w-4 text-emerald-600" />
                 Catat Penimbangan Berat Badan
               </h3>
               <form onSubmit={handleAddWeight} className="flex gap-2">
@@ -839,190 +884,168 @@ export default function Home() {
                   placeholder="Berat (kg e.g. 68.5)"
                   value={weightKg}
                   onChange={(e) => setWeightKg(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition"
                 />
                 <button
                   type="submit"
                   disabled={isSubmittingWeight}
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center justify-center shrink-0 shadow-sm"
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center justify-center shrink-0 shadow-xs"
                 >
                   {isSubmittingWeight ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
                   ) : showWeightSuccess ? (
-                    <Check className="h-4 w-4" />
+                    <>
+                      <Check className="h-4 w-4 mr-1" />
+                      Tersimpan!
+                    </>
                   ) : (
-                    "Timbang"
+                    "Catat"
                   )}
                 </button>
               </form>
-              {latestWeight && (
-                <div className="text-[11px] text-stone-400 font-medium">
-                  Timbangan Terakhir: <span className="font-bold text-stone-800">{latestWeight} kg</span>
-                </div>
-              )}
             </div>
 
-            {/* Body Composition Card */}
-            <BodyCompositionCard user={user} onSuccess={fetchData} />
+            {/* Smart BMI Gauge Component */}
+            {latestWeight && (
+              <BmiGauge 
+                weightKg={latestWeight} 
+                heightCm={user.heightCm} 
+              />
+            )}
 
-            {/* Weight Quick Stats Bar */}
-            {sortedWeightLogs.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 text-center bg-white rounded-2xl border border-stone-200 p-3 shadow-xs">
-                <div className="p-1">
-                  <div className="text-[10px] uppercase font-bold text-stone-400">Awal Periode</div>
-                  <div className="text-sm font-black text-stone-800 mt-0.5">
-                    {sortedWeightLogs[0].weightKg} <span className="text-[10px] font-normal text-stone-400">kg</span>
+            {/* Smart Target Weight Projection Card */}
+            {insightsData?.projection && (
+              <div className="bg-gradient-to-br from-emerald-700 via-teal-800 to-stone-900 text-white rounded-3xl p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    Proyeksi Pencapaian Target
+                  </span>
+                  <span className="bg-emerald-600/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-400/30">
+                    {insightsData.projection.paceCategory}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <div className="text-[11px] text-emerald-200">Berat Terkini</div>
+                    <div className="text-xl font-black">{insightsData.projection.currentWeightKg} kg</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-emerald-200">Target Akhir</div>
+                    <div className="text-xl font-black">{insightsData.projection.targetWeightKg} kg</div>
                   </div>
                 </div>
-                <div className="p-1 border-x border-stone-100">
-                  <div className="text-[10px] uppercase font-bold text-stone-400">Terakhir</div>
-                  <div className="text-sm font-black text-orange-600 mt-0.5">
-                    {latestWeight || user.currentWeightKg} <span className="text-[10px] font-normal text-stone-400">kg</span>
+
+                <div className="pt-2 border-t border-white/15 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-stone-300">Estimasi Capai: </span>
+                    <span className="font-bold text-white">
+                      {insightsData.projection.estimatedTargetDate 
+                        ? new Date(insightsData.projection.estimatedTargetDate).toLocaleDateString("id-ID", { month: "short", day: "numeric", year: "numeric" })
+                        : "Konsistensi log dibutuhkan"}
+                    </span>
                   </div>
-                </div>
-                <div className="p-1">
-                  <div className="text-[10px] uppercase font-bold text-stone-400">Perubahan</div>
-                  {sortedWeightLogs.length >= 2 ? (
-                    (() => {
-                      const delta = Number(((latestWeight || sortedWeightLogs[sortedWeightLogs.length - 1].weightKg) - sortedWeightLogs[0].weightKg).toFixed(1));
-                      const isMinus = delta < 0;
-                      return (
-                        <div className={`text-sm font-black mt-0.5 ${isMinus ? 'text-emerald-600' : delta === 0 ? 'text-stone-700' : 'text-amber-600'}`}>
-                          {delta > 0 ? `+${delta}` : delta} <span className="text-[10px] font-normal text-stone-400">kg</span>
-                        </div>
-                      );
-                    })()
-                  ) : (
-                    <div className="text-xs text-stone-400 mt-1 font-semibold">-</div>
+                  {insightsData.projection.estimatedDaysRemaining !== null && (
+                    <span className="bg-white/20 text-white px-2 py-0.5 rounded-md text-[10px] font-bold">
+                      ~{insightsData.projection.estimatedDaysRemaining} hari lagi
+                    </span>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Weight Progress Chart (Recharts Enhanced) */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
-                    <TrendingUp className="h-4 w-4 text-orange-500" />
-                    Grafik Tren Berat Badan
-                  </h3>
-                  <p className="text-[11px] text-stone-400 mt-0.5 font-medium">
-                    Periode: {dateFilter.mode === "monthly" ? `Bulan ${dateFilter.month}` : dateFilter.mode === "yearly" ? `Tahun ${dateFilter.year}` : dateFilter.mode === "custom" ? `${dateFilter.startDate} s/d ${dateFilter.endDate}` : "30 Hari Terdekat"}
-                  </p>
-                </div>
-                <button
-                  onClick={fetchData}
-                  className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </button>
+            {/* Weight Progress Chart */}
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
+                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                  Grafik Tren Timbangan
+                </h3>
+                <span className="text-[10px] text-stone-400 font-medium">
+                  {chartData.length} Entri Tercatat
+                </span>
               </div>
 
-              <div className="h-64 w-full bg-stone-50 rounded-xl border border-stone-100 p-2">
-                {mounted && chartData.length > 0 ? (
+              {chartData.length > 0 ? (
+                <div className="h-56 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -25, bottom: 0 }}>
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="weightAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#f97316" stopOpacity={0.0} />
+                        <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#059669" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="#a8a29e" 
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f4" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#78716c" }} tickLine={false} axisLine={false} />
+                      <YAxis domain={['dataMin - 1', 'dataMax + 1']} tick={{ fontSize: 10, fill: "#78716c" }} tickLine={false} axisLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: "#1c1917", borderRadius: "12px", border: "none", color: "#fff", fontSize: "11px" }}
+                        formatter={(val: any) => [`${val} kg`, "Berat Badan"]}
                       />
-                      <YAxis 
-                        stroke="#a8a29e" 
-                        fontSize={10} 
-                        domain={["dataMin - 1", "dataMax + 1"]}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#ffffff",
-                          borderColor: "#e7e5e4",
-                          borderRadius: "12px",
-                          color: "#1c1917",
-                          fontSize: "12px",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)"
-                        }}
-                        labelClassName="font-bold text-stone-500 mb-1"
-                        formatter={(value: any) => [`${value} kg`, "Berat"]}
-                      />
-                      {insightsData?.projection?.targetWeightKg && (
-                        <ReferenceLine
-                          y={insightsData.projection.targetWeightKg}
-                          stroke="#10b981"
-                          strokeDasharray="4 4"
-                          strokeWidth={1.5}
-                          label={{
-                            value: `Target: ${insightsData.projection.targetWeightKg}kg`,
-                            position: "insideTopRight",
-                            fill: "#059669",
-                            fontSize: 10,
-                            fontWeight: "bold"
-                          }}
-                        />
-                      )}
-                      <Area
-                        type="monotone"
-                        dataKey="weight"
-                        stroke="#f97316"
-                        strokeWidth={3}
-                        fillOpacity={1}
-                        fill="url(#weightAreaGrad)"
-                        dot={{ r: 4, stroke: "#ffffff", strokeWidth: 2, fill: "#f97316" }}
-                        activeDot={{ r: 6, stroke: "#ffffff", strokeWidth: 2, fill: "#f97316" }}
-                      />
+                      <Area type="monotone" dataKey="weight" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#weightGrad)" />
                     </AreaChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-stone-400 text-xs">
-                    <Scale className="h-8 w-8 text-stone-300 mb-2" />
-                    <p className="font-semibold text-stone-600">Belum ada history berat badan</p>
-                    <p className="text-[10px] text-stone-400 mt-0.5">Catat timbangan pertama Anda di atas!</p>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-10 text-stone-400">
+                  <Scale className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-stone-600">Belum ada data timbangan tercatat</p>
+                  <p className="text-[11px] text-stone-400 mt-0.5">Catat berat badan harian pada form di atas!</p>
+                </div>
+              )}
             </div>
 
-            {/* Interactive BMI Gauge Component */}
-            <BmiGauge
-              weightKg={latestWeight || user.currentWeightKg || 0}
-              heightCm={user.heightCm || 170}
-            />
+            {/* Riwayat Timbangan Table */}
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
+              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">
+                Log Riwayat Timbangan ({sortedWeightLogs.length})
+              </h3>
+              {sortedWeightLogs.length > 0 ? (
+                <div className="divide-y divide-stone-100 max-h-52 overflow-y-auto">
+                  {sortedWeightLogs.slice().reverse().map((log, i) => (
+                    <div key={i} className="py-2.5 flex items-center justify-between text-xs">
+                      <span className="text-stone-500 font-medium">
+                        {new Date(log.timestamp).toLocaleDateString("id-ID", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short"
+                        })}
+                      </span>
+                      <span className="font-bold text-stone-900">{log.weightKg} kg</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-stone-400 py-2">Belum ada riwayat tercatat.</div>
+              )}
+            </div>
 
           </main>
         )}
 
-        {/* TAB 3: WORKOUT (Catatan Olahraga & Latihan) */}
+        {/* TAB 3: WORKOUT (Catat Olahraga & Latihan Fisik) */}
         {activeTab === "workout" && (
-          <main className="space-y-4">
+          <main className="space-y-4 animate-in fade-in duration-200">
             
-            {/* Workout Summary Box */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm flex items-center justify-between">
+            {/* Kalori Terbakar Summary Card */}
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs flex items-center justify-between">
               <div>
                 <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">Kalori Terbakar Hari Ini</h3>
-                <div className="text-2xl font-black text-green-600 mt-0.5">
+                <div className="text-2xl font-black text-emerald-700 mt-0.5">
                   -{burnedCalories} <span className="text-xs font-normal text-stone-500">kcal</span>
                 </div>
               </div>
-              <div className="h-12 w-12 rounded-2xl bg-green-50 border border-green-100 flex items-center justify-center text-green-600 text-xl font-black">
-                🏋️
+              <div className="h-12 w-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 shadow-2xs">
+                <Dumbbell className="h-6 w-6" />
               </div>
             </div>
 
             {/* Form Catat Olahraga */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
               <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
-                <Dumbbell className="h-4 w-4 text-green-600" />
+                <Dumbbell className="h-4 w-4 text-emerald-700" />
                 Catat Aktivitas Latihan
               </h3>
 
@@ -1034,17 +1057,17 @@ export default function Home() {
                 </div>
                 <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                   {[
-                    { label: "🏋️ Gym / Beban", name: "Latihan Beban (Gym Push/Pull)", duration: "60", cal: "360" },
-                    { label: "🏃 Treadmill", name: "Lari Treadmill / Jogging", duration: "30", cal: "280" },
-                    { label: "🚴 Sepeda", name: "Sepeda Statis / Spinning", duration: "45", cal: "320" },
-                    { label: "🥊 HIIT", name: "Kardio HIIT & Sirkuit", duration: "25", cal: "250" },
-                    { label: "🚶 Jalan Kaki", name: "Jalan Cepat / Brisk Walk", duration: "40", cal: "160" }
+                    { label: "Gym Beban", name: "Latihan Beban (Gym Push/Pull)", duration: "60", cal: "360" },
+                    { label: "Treadmill", name: "Lari Treadmill / Jogging", duration: "30", cal: "280" },
+                    { label: "Sepeda", name: "Sepeda Statis / Spinning", duration: "45", cal: "320" },
+                    { label: "HIIT", name: "Kardio HIIT & Sirkuit", duration: "25", cal: "250" },
+                    { label: "Jalan Kaki", name: "Jalan Cepat / Brisk Walk", duration: "40", cal: "160" }
                   ].map((preset) => (
                     <button
                       key={preset.label}
                       type="button"
                       onClick={() => handleSelectWorkoutPreset(preset)}
-                      className="shrink-0 bg-stone-100 hover:bg-green-50 hover:text-green-700 hover:border-green-300 border border-stone-200 text-stone-700 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition"
+                      className="shrink-0 bg-stone-50 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 border border-stone-200 text-stone-700 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition"
                     >
                       {preset.label}
                     </button>
@@ -1061,7 +1084,7 @@ export default function Home() {
                     placeholder="e.g. Lari Treadmill, Angkat Beban, Sepeda"
                     value={activityName}
                     onChange={(e) => setActivityName(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition"
                   />
                 </div>
 
@@ -1074,7 +1097,7 @@ export default function Home() {
                       placeholder="e.g. 45"
                       value={durationMinutes}
                       onChange={(e) => setDurationMinutes(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition"
                     />
                   </div>
                   <div>
@@ -1084,9 +1107,10 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={handleEstimateCalories}
-                          className="text-[10px] text-green-700 hover:text-green-800 font-bold bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded transition"
+                          className="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded transition flex items-center gap-1"
                         >
-                          ⚡ Estimasi
+                          <Zap className="h-3 w-3" />
+                          <span>Estimasi</span>
                         </button>
                       )}
                     </div>
@@ -1096,7 +1120,7 @@ export default function Home() {
                       placeholder="e.g. 320"
                       value={workoutCalories}
                       onChange={(e) => setWorkoutCalories(e.target.value)}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition"
                     />
                   </div>
                 </div>
@@ -1104,7 +1128,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={isSubmittingWorkout}
-                  className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
+                  className="w-full bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
                 >
                   {isSubmittingWorkout ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
@@ -1114,16 +1138,16 @@ export default function Home() {
                       Berhasil Dicatat!
                     </>
                   ) : (
-                    "Tambah Olahraga"
+                    "Simpan Olahraga"
                   )}
                 </button>
               </form>
             </div>
 
-            {/* List Log Olahraga */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
-              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider mb-3 border-b border-stone-100 pb-2">
-                Riwayat Olahraga ({summaryData?.workouts.length || 0})
+            {/* List Workout Hari Ini */}
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
+              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">
+                Riwayat Latihan Hari Ini ({summaryData?.workouts.length || 0})
               </h3>
 
               {summaryData?.workouts && summaryData.workouts.length > 0 ? (
@@ -1133,34 +1157,34 @@ export default function Home() {
                       hour: "2-digit",
                       minute: "2-digit"
                     });
-                    const isStrength = /beban|gym|angkat|weight|push|pull|squat|bench|deadlift|dumbbell/i.test(workout.activityName);
+                    const isStrength = workout.activityName.toLowerCase().includes("beban") || workout.activityName.toLowerCase().includes("gym");
                     return (
                       <div 
-                        key={workout.id} 
-                        className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 flex justify-between items-center"
+                        key={workout.id}
+                        className="p-3.5 rounded-2xl bg-stone-50 border border-stone-100 flex items-center justify-between"
                       >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-stone-900">{workout.activityName}</span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
-                              isStrength ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                              {isStrength ? '🏋️ Beban' : '🏃 Kardio'}
-                            </span>
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800 text-sm font-bold shrink-0">
+                            {isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
                           </div>
-                          <div className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5">
-                            <Clock className="h-3 w-3" /> {time} WIB • {workout.durationMinutes} menit
+                          <div>
+                            <div className="text-xs font-bold text-stone-900">{workout.activityName}</div>
+                            <div className="text-[10px] text-stone-400 mt-0.5 flex items-center gap-2">
+                              <span>{workout.durationMinutes} menit</span>
+                              <span>•</span>
+                              <span>{time} WIB</span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-extrabold text-green-600">
-                            -{workout.caloriesBurned} kcal
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-xs font-black text-emerald-700">
+                            -{workout.caloriesBurned} <span className="text-[10px] font-normal text-stone-400">kcal</span>
                           </span>
                           <button
                             onClick={() => handleDeleteWorkout(workout.id)}
                             title="Hapus log olahraga"
-                            className="p-1 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition"
+                            className="p-1 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 transition"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -1170,82 +1194,56 @@ export default function Home() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-8 text-stone-400">
-                  <div className="text-2xl mb-1">🏃</div>
-                  <p className="text-xs font-semibold text-stone-600">Belum ada aktivitas olahraga hari ini</p>
-                  <p className="text-[11px] text-stone-400 mt-0.5">Pilih preset di atas atau catat latihan untuk membakar kalori!</p>
+                <div className="text-center py-8 text-stone-400 bg-stone-50/50 rounded-2xl border border-dashed border-stone-200">
+                  <div className="h-10 w-10 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mx-auto mb-2">
+                    <Dumbbell className="h-5 w-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-stone-700">Belum ada olahraga pada tanggal ini</p>
+                  <p className="text-[11px] text-stone-400 mt-0.5">Latihan Anda akan menambah budget kalori harian!</p>
                 </div>
               )}
-            </div>
-
-            {/* Program Latihan Preview Banner */}
-            <div className="bg-orange-50 rounded-2xl border border-orange-200 p-4 text-orange-900 text-xs flex items-center gap-3">
-              <Sparkles className="h-6 w-6 text-orange-500 shrink-0" />
-              <div>
-                <span className="font-bold">KyuFit Training Programs (Coming Soon): </span>
-                Fitur otomatis penyedia rekomendasi program latihan beban & cardio yang dipersonalisasi!
-              </div>
             </div>
 
           </main>
         )}
 
-        {/* TAB 4: AI TIPS (Dynamic Deep AI Health Analysis) */}
+        {/* TAB 4: AI TIPS (Rekomendasi & Analisis Nutrisi) */}
         {activeTab === "tips" && (
-          <main className="space-y-4">
-
-            {/* Target Projection Summary Card */}
-            {insightsData?.projection && (
-              <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl p-5 text-white shadow-md space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-amber-200 animate-pulse" />
-                    <h3 className="text-xs uppercase font-bold tracking-wider text-orange-100">
-                      Analisa Proyeksi AI KyuFit
-                    </h3>
-                  </div>
-                  <span className="text-[10px] bg-white/20 px-2.5 py-0.5 rounded-full font-extrabold uppercase">
-                    Pace: {insightsData.projection.paceCategory}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
-                    <div className="text-[10px] text-orange-100 font-semibold">Berat Badan Sekarang</div>
-                    <div className="text-xl font-black mt-0.5">{insightsData.projection.currentWeightKg} <span className="text-xs font-normal">kg</span></div>
-                  </div>
-                  <div className="bg-white/10 rounded-xl p-3 backdrop-blur-xs">
-                    <div className="text-[10px] text-orange-100 font-semibold">Target Berat Badan</div>
-                    <div className="text-xl font-black mt-0.5">{insightsData.projection.targetWeightKg} <span className="text-xs font-normal">kg</span></div>
-                  </div>
-                </div>
-
-                {insightsData.projection.estimatedTargetDate && (
-                  <div className="text-xs text-orange-100 flex items-center gap-1.5 pt-1">
-                    <Calendar className="h-4 w-4 text-amber-200" />
-                    <span>Estimasi mencapai target: <strong>{insightsData.projection.estimatedTargetDate}</strong> ({insightsData.projection.estimatedDaysRemaining} hari lagi)</span>
-                  </div>
-                )}
+          <main className="space-y-4 animate-in fade-in duration-200">
+            
+            {/* Quick Summary AI Card */}
+            <div className="bg-gradient-to-br from-stone-900 to-stone-800 text-white rounded-3xl p-5 shadow-sm space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                <Sparkles className="h-4 w-4" />
+                <span>KyuFit AI Coach</span>
               </div>
-            )}
+              <h2 className="text-base font-bold">Evaluasi Kebugaran Harian</h2>
+              <p className="text-xs text-stone-300 leading-relaxed">
+                KyuBot memonitor defisit kalori, rasio makronutrisi, dan intensitas olahraga harian Anda secara holistik.
+              </p>
+            </div>
 
             {/* Weekly Deep AI Health Insights */}
             {insightsData && (
-              <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+              <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
-                    <Activity className="h-4 w-4 text-orange-500" />
-                    Dynamic Multi-Metric Insights (Meal + Workout + Weight)
+                    <Activity className="h-4 w-4 text-emerald-600" />
+                    Dynamic Multi-Metric Insights
                   </h3>
                   <span className="text-[10px] text-stone-400">Analisa Real-Time</span>
                 </div>
 
                 <div className="space-y-2.5">
                   {insightsData.insights.map((item) => (
-                    <div key={item.id} className="flex items-start gap-3 text-xs p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 transition hover:border-orange-200">
-                      <span className="mt-0.5 shrink-0 text-base">
-                        {item.sentiment === "positive" ? "🟢" : item.sentiment === "warning" ? "🔴" : "🟡"}
-                      </span>
+                    <div key={item.id} className="flex items-start gap-3 text-xs p-3.5 rounded-2xl bg-stone-50 border border-stone-100 transition hover:border-emerald-200">
+                      <span className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${
+                        item.sentiment === "positive" 
+                          ? "bg-emerald-500 ring-4 ring-emerald-100" 
+                          : item.sentiment === "warning" 
+                          ? "bg-red-500 ring-4 ring-red-100" 
+                          : "bg-amber-500 ring-4 ring-amber-100"
+                      }`} />
                       <div>
                         <div className="font-bold text-stone-900 text-xs">{item.title}</div>
                         <div className="text-stone-600 mt-0.5 leading-relaxed">{item.description}</div>
@@ -1258,18 +1256,18 @@ export default function Home() {
 
             {/* Rekomendasi Menu Sisa Kalori */}
             {insightsData && (
-              <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+              <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
                 <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
-                  <Apple className="h-4 w-4 text-orange-500" />
+                  <Apple className="h-4 w-4 text-emerald-600" />
                   Rekomendasi Makanan Pasca-Workout & Makro
                 </h3>
 
                 <div className="space-y-2.5">
                   {insightsData.mealSuggestions.map((meal) => (
-                    <div key={meal.id} className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 text-xs">
+                    <div key={meal.id} className="p-3.5 rounded-2xl bg-stone-50 border border-stone-100 text-xs">
                       <div className="flex justify-between font-bold text-stone-900">
                         <span>{meal.title}</span>
-                        <span className="text-orange-600 font-extrabold">{meal.calories} kcal</span>
+                        <span className="text-emerald-700 font-extrabold">{meal.calories} kcal</span>
                       </div>
                       <div className="text-[11px] text-stone-600 mt-1">
                         P: {meal.proteinG}g | K: {meal.carbsG}g | L: {meal.fatsG}g — <span className="text-stone-500 italic">{meal.note}</span>
@@ -1281,13 +1279,13 @@ export default function Home() {
             )}
 
             {/* Metodologi Sains & FAQ */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
               <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
                 <Info className="h-4 w-4 text-stone-400" />
                 Metodologi Berbasis Sains KyuFit
               </h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                KyuFit menggunakan formula **Mifflin-St Jeor** untuk menghitung RMR dan TDEE secara tepat. Target defisit kalori diatur aman berkisar 15-20% dari TDEE agar penurunan berat badan berkelanjutan tanpa mengorbankan massa otot.
+                KyuFit menggunakan formula <strong>Mifflin-St Jeor</strong> & <strong>Katch-McArdle</strong> untuk menghitung RMR dan TDEE secara tepat. Target defisit kalori diatur berkisar 15-20% dari TDEE agar penurunan berat badan berkelanjutan tanpa mengorbankan massa otot aktif.
               </p>
             </div>
 
@@ -1296,53 +1294,68 @@ export default function Home() {
 
         {/* TAB 5: PROFILE (Setting & Profil User) */}
         {activeTab === "profile" && (
-          <main className="space-y-4">
+          <main className="space-y-4 animate-in fade-in duration-200">
             
             {/* Profile Header Box */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm text-center space-y-2">
-              <div className="h-16 w-16 rounded-full bg-orange-100 border-2 border-orange-500 mx-auto flex items-center justify-center text-3xl shadow-sm">
-                🐱
+            <div className="bg-white rounded-3xl border border-stone-100 p-6 shadow-xs text-center space-y-2">
+              <div className="h-16 w-16 rounded-full bg-emerald-50 border-2 border-emerald-500 mx-auto flex items-center justify-center text-emerald-700 shadow-2xs">
+                <User className="h-8 w-8" />
               </div>
               <div>
                 <h2 className="text-base font-bold text-stone-900">{user.email.split("@")[0]}</h2>
                 <div className="text-xs text-stone-500 font-medium">WhatsApp: +{user.whatsappNumber}</div>
               </div>
-              <div className="inline-block bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold px-3 py-1 rounded-full mt-1">
-                Goal: {user.fitnessGoal} ({user.dailyCalorieTarget} kcal/hari)
+              <div className="inline-block bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full mt-1">
+                Goal: {user.fitnessGoal.toUpperCase()}
               </div>
             </div>
 
-            {/* Target Nutrisi & Breakdown */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
-              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">Target Nutrisi Harian Anda</h3>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-2 border-b border-stone-100">
-                  <span className="text-stone-600 font-medium">Target Kalori:</span>
-                  <span className="font-bold text-stone-900">{user.dailyCalorieTarget} kcal</span>
+            {/* Body Composition Card */}
+            <BodyCompositionCard
+              user={{
+                currentWeightKg: user.currentWeightKg,
+                heightCm: user.heightCm,
+                bodyFatPercent: user.bodyFatPercent,
+                skeletalMuscleMassKg: user.skeletalMuscleMassKg,
+                visceralFatLevel: user.visceralFatLevel,
+                inbodyScore: user.inbodyScore,
+                dailyCalorieTarget: user.dailyCalorieTarget,
+                targetProteinG: user.targetProteinG,
+              }}
+              onSuccess={fetchData}
+            />
+
+            {/* Target Settings Summary */}
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
+              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">
+                Parameter Nutrisi Saat Ini
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
+                  <div className="text-[10px] text-stone-400 font-semibold">Target Kalori</div>
+                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.dailyCalorieTarget} kcal</div>
                 </div>
-                <div className="flex justify-between py-2 border-b border-stone-100">
-                  <span className="text-stone-600 font-medium">Target Protein:</span>
-                  <span className="font-bold text-orange-600">{user.targetProteinG} g</span>
+                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
+                  <div className="text-[10px] text-stone-400 font-semibold">Target Protein</div>
+                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.targetProteinG} g</div>
                 </div>
-                <div className="flex justify-between py-2 border-b border-stone-100">
-                  <span className="text-stone-600 font-medium">Target Karbohidrat:</span>
-                  <span className="font-bold text-purple-600">{user.targetCarbsG} g</span>
+                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
+                  <div className="text-[10px] text-stone-400 font-semibold">Target Karbohidrat</div>
+                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.targetCarbsG} g</div>
                 </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-stone-600 font-medium">Target Lemak:</span>
-                  <span className="font-bold text-amber-600">{user.targetFatsG} g</span>
+                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
+                  <div className="text-[10px] text-stone-400 font-semibold">Target Lemak</div>
+                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.targetFatsG} g</div>
                 </div>
               </div>
             </div>
-
-            {/* Body Composition Management Card in Profile */}
-            <BodyCompositionCard user={user} onSuccess={fetchData} />
 
             {/* Quick Actions & Logout */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-2">
+            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-2">
               <button
                 onClick={handleLogout}
-                className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl text-xs transition flex items-center justify-center gap-2 border border-red-100"
+                className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-red-100 active:scale-[0.99]"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Keluar (Logout)</span>
@@ -1354,59 +1367,64 @@ export default function Home() {
 
       </div>
 
-      {/* FIXED BOTTOM NAVIGATION BAR (5 Tabs) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 border-t border-stone-200 backdrop-blur-sm shadow-lg">
-        <div className="mx-auto max-w-xl grid grid-cols-5 py-2 px-1 text-center">
+      {/* FIXED BOTTOM NAVIGATION BAR WITH ELEVATED CENTER (+) FLOATING ACTION BUTTON */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-stone-200/80 backdrop-blur-md shadow-lg">
+        <div className="mx-auto max-w-md relative flex items-center justify-around py-2 px-2 text-center">
           
           {/* Tab 1: Today */}
           <button
+            type="button"
             onClick={() => setActiveTab("today")}
-            className={`flex flex-col items-center justify-center py-1 transition ${
-              activeTab === "today" ? "text-orange-500 font-bold" : "text-stone-400 hover:text-stone-600"
+            className={`flex flex-col items-center justify-center py-1 flex-1 transition active:scale-95 ${
+              activeTab === "today" ? "text-emerald-700 font-bold" : "text-stone-400 hover:text-stone-600"
             }`}
           >
             <Calendar className="h-5 w-5 mb-0.5" />
             <span className="text-[10px]">Today</span>
           </button>
 
-          {/* Tab 2: Progress */}
+          {/* Tab 2: Insight / Progress */}
           <button
+            type="button"
             onClick={() => setActiveTab("progress")}
-            className={`flex flex-col items-center justify-center py-1 transition ${
-              activeTab === "progress" ? "text-orange-500 font-bold" : "text-stone-400 hover:text-stone-600"
+            className={`flex flex-col items-center justify-center py-1 flex-1 transition active:scale-95 ${
+              activeTab === "progress" ? "text-emerald-700 font-bold" : "text-stone-400 hover:text-stone-600"
             }`}
           >
             <TrendingUp className="h-5 w-5 mb-0.5" />
-            <span className="text-[10px]">Progress</span>
+            <span className="text-[10px]">Insight</span>
           </button>
 
-          {/* Tab 3: Workout */}
-          <button
-            onClick={() => setActiveTab("workout")}
-            className={`flex flex-col items-center justify-center py-1 transition ${
-              activeTab === "workout" ? "text-orange-500 font-bold" : "text-stone-400 hover:text-stone-600"
-            }`}
-          >
-            <Dumbbell className="h-5 w-5 mb-0.5" />
-            <span className="text-[10px]">Workout</span>
-          </button>
+          {/* Center Elevated Floating Action Button (+) */}
+          <div className="relative -top-5 flex items-center justify-center flex-1">
+            <button
+              type="button"
+              onClick={() => setIsQuickActionOpen(true)}
+              className="h-13 w-13 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white flex items-center justify-center shadow-lg ring-4 ring-[#FAFAF9] transition-transform active:scale-90"
+              title="Catat Cepat"
+            >
+              <Plus className="h-6 w-6 stroke-[2.5]" />
+            </button>
+          </div>
 
           {/* Tab 4: AI Tips */}
           <button
+            type="button"
             onClick={() => setActiveTab("tips")}
-            className={`flex flex-col items-center justify-center py-1 transition ${
-              activeTab === "tips" ? "text-orange-500 font-bold" : "text-stone-400 hover:text-stone-600"
+            className={`flex flex-col items-center justify-center py-1 flex-1 transition active:scale-95 ${
+              activeTab === "tips" ? "text-emerald-700 font-bold" : "text-stone-400 hover:text-stone-600"
             }`}
           >
             <Sparkles className="h-5 w-5 mb-0.5" />
-            <span className="text-[10px]">AI Tips</span>
+            <span className="text-[10px]">Tips</span>
           </button>
 
           {/* Tab 5: Profile */}
           <button
+            type="button"
             onClick={() => setActiveTab("profile")}
-            className={`flex flex-col items-center justify-center py-1 transition ${
-              activeTab === "profile" ? "text-orange-500 font-bold" : "text-stone-400 hover:text-stone-600"
+            className={`flex flex-col items-center justify-center py-1 flex-1 transition active:scale-95 ${
+              activeTab === "profile" ? "text-emerald-700 font-bold" : "text-stone-400 hover:text-stone-600"
             }`}
           >
             <User className="h-5 w-5 mb-0.5" />
@@ -1415,6 +1433,14 @@ export default function Home() {
 
         </div>
       </nav>
+
+      {/* Quick Action Bottom Sheet Modal */}
+      <QuickActionModal
+        isOpen={isQuickActionOpen}
+        onClose={() => setIsQuickActionOpen(false)}
+        onSelectAction={handleQuickActionSelect}
+        botWhatsAppNumber={process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER}
+      />
 
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Lock, Mail, Phone, Activity, AlertCircle, Loader2, Check } from 'lucide-react';
+import { User, Lock, Mail, Phone, Activity, AlertCircle, Loader2, Check, Flame } from 'lucide-react';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -60,8 +60,8 @@ export default function RegisterPage() {
         
         {/* Header/Logo */}
         <div className="flex flex-col items-center mb-6 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-orange-500 flex items-center justify-center text-white text-3xl font-black shadow-sm mb-3">
-            🐱
+          <div className="h-14 w-14 rounded-2xl bg-emerald-700 flex items-center justify-center text-white shadow-sm mb-3">
+            <Flame className="h-7 w-7 text-white fill-white" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-stone-900">
             Buat Akun KyuFit

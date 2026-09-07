@@ -16,7 +16,11 @@ import {
   Target,
   TrendingDown,
   TrendingUp,
-  Minus
+  Minus,
+  Sparkles,
+  Dumbbell,
+  Footprints,
+  Coffee
 } from "lucide-react";
 
 type Gender = "male" | "female";
@@ -38,12 +42,12 @@ interface CalcResult {
   warningLevel?: string;
 }
 
-const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string; icon: string }[] = [
-  { value: "sedentary", label: "Sedentary", desc: "Jarang olahraga, kerja duduk", icon: "🪑" },
-  { value: "light", label: "Ringan", desc: "Olahraga 1-3x / minggu", icon: "🚶" },
-  { value: "moderate", label: "Moderat", desc: "Olahraga 3-5x / minggu", icon: "🏃" },
-  { value: "active", label: "Aktif", desc: "Olahraga 6-7x / minggu", icon: "💪" },
-  { value: "extra_active", label: "Sangat Aktif", desc: "Fisik berat / atlet", icon: "🔥" },
+const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string; icon: any }[] = [
+  { value: "sedentary", label: "Sedentary", desc: "Jarang olahraga, kerja duduk", icon: Coffee },
+  { value: "light", label: "Ringan", desc: "Olahraga 1-3x / minggu", icon: Footprints },
+  { value: "moderate", label: "Moderat", desc: "Olahraga 3-5x / minggu", icon: Activity },
+  { value: "active", label: "Aktif", desc: "Olahraga 6-7x / minggu", icon: Dumbbell },
+  { value: "extra_active", label: "Sangat Aktif", desc: "Fisik berat / atlet", icon: Flame },
 ];
 
 const GOAL_OPTIONS: { value: FitnessGoal; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
@@ -171,8 +175,8 @@ export default function OnboardingPage() {
       <div className="w-full max-w-lg bg-white border border-stone-200 p-8 rounded-2xl shadow-sm">
         {/* Header */}
         <div className="flex flex-col items-center mb-6 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-orange-500 flex items-center justify-center text-white text-3xl font-black shadow-sm mb-3">
-            🐱
+          <div className="h-14 w-14 rounded-2xl bg-emerald-700 flex items-center justify-center text-white shadow-sm mb-3">
+            <Flame className="h-7 w-7 text-white fill-white" />
           </div>
           <h1 className="text-xl font-bold text-stone-900">Personalisasi Target Anda</h1>
           <p className="text-xs text-stone-500 mt-1">Data ini digunakan untuk menghitung target kalori & makro harian</p>
@@ -375,13 +379,15 @@ export default function OnboardingPage() {
                 onClick={() => setActivityLevel(opt.value)}
                 className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl border text-left transition ${
                   activityLevel === opt.value
-                    ? "bg-orange-50 border-orange-400 shadow-sm"
+                    ? "bg-emerald-50 border-emerald-400 shadow-sm"
                     : "bg-stone-50 border-stone-200 hover:bg-stone-100"
                 }`}
               >
-                <span className="text-2xl">{opt.icon}</span>
+                <div className={`p-2 rounded-xl shrink-0 ${activityLevel === opt.value ? "bg-emerald-100 text-emerald-700" : "bg-white text-stone-500 border border-stone-100"}`}>
+                  <opt.icon className="h-5 w-5" />
+                </div>
                 <div>
-                  <div className={`text-xs font-bold ${activityLevel === opt.value ? "text-orange-700" : "text-stone-900"}`}>
+                  <div className={`text-xs font-bold ${activityLevel === opt.value ? "text-emerald-800" : "text-stone-900"}`}>
                     {opt.label}
                   </div>
                   <div className="text-[11px] text-stone-500">{opt.desc}</div>
@@ -433,7 +439,7 @@ export default function OnboardingPage() {
             <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-xl">
               <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
                 <p className="text-xs text-stone-800 font-bold flex items-center gap-1.5">
-                  <span>📐</span>
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
                   <span>Metodologi Berbasis Sains</span>
                 </p>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-100 text-orange-700">
@@ -464,12 +470,15 @@ export default function OnboardingPage() {
             </div>
 
             {/* Main Target */}
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-center">
-              <div className="text-xs text-orange-700 font-bold uppercase tracking-wider">🎯 Target Kalori Harian</div>
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+              <div className="text-xs text-emerald-800 font-bold uppercase tracking-wider flex items-center justify-center gap-1.5">
+                <Target className="h-4 w-4 text-emerald-700" />
+                <span>Target Kalori Harian</span>
+              </div>
               <div className="text-3xl font-black text-stone-900 mt-1">{calcResult.dailyCalorieTarget}</div>
-              <div className="text-xs text-orange-600 font-medium">kcal / hari</div>
-              <p className="text-[10px] text-stone-400 mt-1.5">
-                💡 Target awal ini akan otomatis dikalibrasi berdasarkan tren perubahan timbangan harian Anda.
+              <div className="text-xs text-emerald-700 font-medium">kcal / hari</div>
+              <p className="text-[10px] text-stone-500 mt-1.5">
+                Target awal ini akan otomatis dikalibrasi berdasarkan tren perubahan timbangan harian Anda.
               </p>
             </div>
 

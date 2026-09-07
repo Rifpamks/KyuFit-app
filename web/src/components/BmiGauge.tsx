@@ -105,8 +105,9 @@ export default function BmiGauge({ weightKg, heightCm }: BmiGaugeProps) {
         </div>
       </div>
 
-      <p className="text-[11px] text-stone-500 leading-relaxed pt-0.5">
-        💡 <strong>Saran KyuFit:</strong> {tipText}
+      <p className="text-[11px] text-stone-500 leading-relaxed pt-0.5 flex items-start gap-1.5">
+        <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+        <span><strong>Saran KyuFit:</strong> {tipText}</span>
       </p>
     </div>
   );
