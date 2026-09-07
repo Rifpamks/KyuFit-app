@@ -9,6 +9,8 @@ interface EnergyBalanceRingProps {
   burnedCalories: number;
   isMultiDay?: boolean;
   daysInRange?: number;
+  activeDaysCount?: number;
+  totalConsumedCalories?: number;
   fitnessGoal?: string;
 }
 
@@ -18,6 +20,8 @@ export default function EnergyBalanceRing({
   burnedCalories,
   isMultiDay = false,
   daysInRange = 1,
+  activeDaysCount = 1,
+  totalConsumedCalories,
   fitnessGoal = 'cut'
 }: EnergyBalanceRingProps) {
   // Effective budget equation: Remaining = Target - Consumed + Burned
@@ -75,7 +79,7 @@ export default function EnergyBalanceRing({
       <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">
-            {isMultiDay ? `Energy Balance Rata-Rata (${daysInRange} Hari)` : 'Energy Balance Harian'}
+            {isMultiDay ? `Energy Balance Rata-Rata (${activeDaysCount} Hari Aktif)` : 'Energy Balance Harian'}
           </span>
           <h2 className="text-base font-bold text-stone-900 mt-0.5">Dual-Progress Energy Ring</h2>
         </div>
@@ -188,10 +192,15 @@ export default function EnergyBalanceRing({
               <div className="w-3 h-3 rounded-full bg-orange-500" />
               <div className="flex items-center gap-1 text-orange-900 font-semibold">
                 <Flame className="w-3.5 h-3.5 text-orange-600" />
-                <span>Makanan (Intake):</span>
+                <span>{isMultiDay ? 'Rata-rata Intake:' : 'Makanan (Intake):'}</span>
               </div>
             </div>
-            <span className="font-extrabold text-orange-700">{consumedCalories} kcal</span>
+            <div className="text-right">
+              <span className="font-extrabold text-orange-700">{consumedCalories} kcal{isMultiDay ? '/hari' : ''}</span>
+              {isMultiDay && totalConsumedCalories !== undefined && (
+                <div className="text-[10px] text-stone-400 font-medium">Total: {totalConsumedCalories} kcal</div>
+              )}
+            </div>
           </div>
 
           {/* Workout Burned */}
@@ -200,15 +209,15 @@ export default function EnergyBalanceRing({
               <div className="w-3 h-3 rounded-full bg-emerald-500" />
               <div className="flex items-center gap-1 text-emerald-900 font-semibold">
                 <Dumbbell className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Olahraga (Burned):</span>
+                <span>{isMultiDay ? 'Rata-rata Olahraga:' : 'Olahraga (Burned):'}</span>
               </div>
             </div>
-            <span className="font-extrabold text-emerald-700">-{burnedCalories} kcal</span>
+            <span className="font-extrabold text-emerald-700">-{burnedCalories} kcal{isMultiDay ? '/hari' : ''}</span>
           </div>
 
           {/* Micro calculation formula indicator */}
           <p className="text-[10px] text-stone-400 text-center sm:text-left pt-1">
-            Rumus: <strong>{targetCalories}</strong> (Target) − <strong>{consumedCalories}</strong> (Intake) + <strong>{burnedCalories}</strong> (Burned) = <strong className={isOverBudget ? 'text-rose-600' : 'text-stone-700'}>{remainingCalories} kcal</strong>
+            Rumus: <strong>{targetCalories}</strong> (Target) − <strong>{consumedCalories}</strong> (Intake) + <strong>{burnedCalories}</strong> (Burned) = <strong className={isOverBudget ? 'text-rose-600' : 'text-stone-700'}>{remainingCalories} kcal{isMultiDay ? '/hari' : ''}</strong>
           </p>
         </div>
       </div>

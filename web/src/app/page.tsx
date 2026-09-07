@@ -84,6 +84,7 @@ interface DailySummary {
     fatsG: number;
     workoutCalories: number;
     daysInRange?: number;
+    activeDaysCount?: number;
     mode?: string;
     dailyAverages?: {
       calories: number;
@@ -432,17 +433,18 @@ export default function Home() {
 
   const daysInRange = summaryData?.summary.daysInRange || 1;
   const isMultiDay = dateFilter.mode !== "daily" && daysInRange > 1;
+  const activeDaysCount = summaryData?.summary.activeDaysCount ?? (isMultiDay ? 1 : 1);
 
   const consumedCalories = summaryData?.summary.calories || 0;
   const burnedCalories = summaryData?.summary.workoutCalories || 0;
   const targetCalories = user.dailyCalorieTarget;
   
   const dailyAvg = summaryData?.summary.dailyAverages || {
-    calories: Math.round(consumedCalories / daysInRange),
-    proteinG: Math.round((summaryData?.summary.proteinG || 0) / daysInRange),
-    carbsG: Math.round((summaryData?.summary.carbsG || 0) / daysInRange),
-    fatsG: Math.round((summaryData?.summary.fatsG || 0) / daysInRange),
-    workoutCalories: Math.round(burnedCalories / daysInRange),
+    calories: Math.round(consumedCalories / (activeDaysCount || 1)),
+    proteinG: Math.round((summaryData?.summary.proteinG || 0) / (activeDaysCount || 1)),
+    carbsG: Math.round((summaryData?.summary.carbsG || 0) / (activeDaysCount || 1)),
+    fatsG: Math.round((summaryData?.summary.fatsG || 0) / (activeDaysCount || 1)),
+    workoutCalories: Math.round(burnedCalories / (activeDaysCount || 1)),
   };
 
   const scaledTargets = summaryData?.summary.scaledTargets || {
@@ -557,6 +559,8 @@ export default function Home() {
               burnedCalories={activeBurned}
               isMultiDay={isMultiDay}
               daysInRange={daysInRange}
+              activeDaysCount={activeDaysCount}
+              totalConsumedCalories={consumedCalories}
               fitnessGoal={user.fitnessGoal}
             />
 
@@ -581,7 +585,7 @@ export default function Home() {
                   </div>
                 </div>
                 <a
-                  href={`https://wa.me/${(process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || '6285693553908').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo Kyu! 🐱')}`}
+                  href={`https://wa.me/${(process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || '6285139362618').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo Kyu! 🐱')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-xs flex items-center gap-1"
@@ -596,7 +600,11 @@ export default function Home() {
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">Rincian Makronutrisi</h3>
-                {isMultiDay && <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">Rata-rata per hari</span>}
+                {isMultiDay && (
+                  <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                    {activeDaysCount > 0 ? `Rata-rata (${activeDaysCount} hari aktif)` : 'Belum ada data'}
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 
@@ -608,7 +616,7 @@ export default function Home() {
                   <div>
                     <div className="text-xs font-bold text-stone-900">{activeProtein} / {user.targetProteinG}g</div>
                     <div className="text-[10px] font-medium text-stone-400">
-                      {isMultiDay ? `Protein (Total ${consumedProtein}g)` : "Protein"}
+                      {isMultiDay ? `Protein (${activeProtein}g/hr • Total ${consumedProtein}g)` : "Protein"}
                     </div>
                   </div>
                 </div>
@@ -621,7 +629,7 @@ export default function Home() {
                   <div>
                     <div className="text-xs font-bold text-stone-900">{activeCarbs} / {user.targetCarbsG}g</div>
                     <div className="text-[10px] font-medium text-stone-400">
-                      {isMultiDay ? `Karbo (Total ${consumedCarbs}g)` : "Karbohidrat"}
+                      {isMultiDay ? `Karbo (${activeCarbs}g/hr • Total ${consumedCarbs}g)` : "Karbohidrat"}
                     </div>
                   </div>
                 </div>
@@ -634,7 +642,7 @@ export default function Home() {
                   <div>
                     <div className="text-xs font-bold text-stone-900">{activeFats} / {user.targetFatsG}g</div>
                     <div className="text-[10px] font-medium text-stone-400">
-                      {isMultiDay ? `Lemak (Total ${consumedFats}g)` : "Lemak"}
+                      {isMultiDay ? `Lemak (${activeFats}g/hr • Total ${consumedFats}g)` : "Lemak"}
                     </div>
                   </div>
                 </div>
@@ -646,7 +654,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="text-xs font-bold text-stone-900">{activeProtein * 4 + activeCarbs * 4 + activeFats * 9} kcal</div>
-                    <div className="text-[10px] font-medium text-stone-400">{isMultiDay ? "Avg Total Makro" : "Total Makro"}</div>
+                    <div className="text-[10px] font-medium text-stone-400">{isMultiDay ? `Avg Makro (${activeDaysCount} hr)` : "Total Makro"}</div>
                   </div>
                 </div>
 

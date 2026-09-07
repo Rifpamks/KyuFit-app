@@ -112,7 +112,7 @@ export async function GET(req: Request) {
 
     const totalWorkoutCalories = workoutLogs.reduce((sum, log) => sum + log.caloriesBurned, 0);
 
-    // Calculate daysInRange for target scaling and daily averages
+    // Calculate daysInRange for target scaling
     const durationMs = Math.max(endWIB.getTime() - startWIB.getTime(), 1000);
     const daysInRange = Math.max(Math.round(durationMs / (1000 * 60 * 60 * 24)), 1);
 
@@ -124,12 +124,26 @@ export async function GET(req: Request) {
       ? 'yearly' 
       : 'daily';
 
+    // Calculate Active Days (distinct calendar dates in WIB with meal or workout logs)
+    const toWIBDateStr = (date: Date) => {
+      const wibTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+      return wibTime.toISOString().slice(0, 10);
+    };
+
+    const activeDaysSet = new Set<string>();
+    mealLogs.forEach(m => activeDaysSet.add(toWIBDateStr(m.timestamp)));
+    workoutLogs.forEach(w => activeDaysSet.add(toWIBDateStr(w.timestamp)));
+
+    // For single-day filter, activeDaysCount is 1. For range, it's number of unique logged days (or 0 if none)
+    const activeDaysCount = mode === 'daily' ? 1 : activeDaysSet.size;
+    const avgDivisor = activeDaysCount > 0 ? activeDaysCount : 1;
+
     const dailyAverages = {
-      calories: Math.round(summary.calories / daysInRange),
-      proteinG: Math.round(summary.proteinG / daysInRange),
-      carbsG: Math.round(summary.carbsG / daysInRange),
-      fatsG: Math.round(summary.fatsG / daysInRange),
-      workoutCalories: Math.round(totalWorkoutCalories / daysInRange)
+      calories: Math.round(summary.calories / avgDivisor),
+      proteinG: Math.round(summary.proteinG / avgDivisor),
+      carbsG: Math.round(summary.carbsG / avgDivisor),
+      fatsG: Math.round(summary.fatsG / avgDivisor),
+      workoutCalories: Math.round(totalWorkoutCalories / avgDivisor)
     };
 
     const scaledTargets = {
@@ -160,6 +174,7 @@ export async function GET(req: Request) {
           ...summary,
           workoutCalories: totalWorkoutCalories,
           daysInRange,
+          activeDaysCount,
           mode,
           dailyAverages,
           scaledTargets
