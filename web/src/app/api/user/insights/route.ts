@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { getOrCreateDefaultUser } from "@/lib/user";
-import { verifyToken } from "@/lib/auth";
+import { resolveUserFromRequest } from "@/lib/user";
 import prisma from "@/lib/prisma";
 import {
   calculateTargetProjection,
@@ -11,22 +9,7 @@ import {
 
 export async function GET(req: Request) {
   try {
-    let user = await getOrCreateDefaultUser();
-
-    // Check session_token cookie for authenticated web user
-    const cookieStore = await cookies();
-    const token = cookieStore.get("session_token")?.value;
-    if (token) {
-      const payload = verifyToken(token);
-      if (payload && payload.userId) {
-        const foundUser = await prisma.user.findUnique({
-          where: { id: payload.userId },
-        });
-        if (foundUser) {
-          user = foundUser;
-        }
-      }
-    }
+    const user = await resolveUserFromRequest(req);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

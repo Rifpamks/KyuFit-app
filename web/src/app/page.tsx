@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import DateFilterBar, { DateFilterState } from "@/components/DateFilterBar";
+import EnergyBalanceRing from "@/components/EnergyBalanceRing";
+import BmiGauge from "@/components/BmiGauge";
 import {
   Flame,
   Apple,
@@ -25,13 +27,16 @@ import {
   Target
 } from "lucide-react";
 import {
+  AreaChart,
+  Area,
   LineChart,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ReferenceLine
 } from "recharts";
 
 interface Meal {
@@ -67,6 +72,8 @@ interface DailySummary {
     fitnessGoal: string;
     email: string;
     whatsappNumber: string;
+    currentWeightKg?: number | null;
+    heightCm?: number | null;
   };
   meals: Meal[];
   workouts: Workout[];
@@ -309,6 +316,31 @@ export default function Home() {
     }
   };
 
+  const handleEstimateCalories = () => {
+    const mins = parseFloat(durationMinutes);
+    if (!mins || mins <= 0) return;
+    const lower = activityName.toLowerCase();
+    let rate = 6.5;
+    if (lower.includes("beban") || lower.includes("gym") || lower.includes("angkat") || lower.includes("weight") || lower.includes("dumbbell")) {
+      rate = 6.0;
+    } else if (lower.includes("lari") || lower.includes("run") || lower.includes("treadmill")) {
+      rate = 9.5;
+    } else if (lower.includes("sepeda") || lower.includes("bike") || lower.includes("cycle")) {
+      rate = 7.2;
+    } else if (lower.includes("jalan") || lower.includes("walk")) {
+      rate = 4.0;
+    } else if (lower.includes("hiit") || lower.includes("boxing") || lower.includes("tabata")) {
+      rate = 10.0;
+    }
+    setWorkoutCalories(Math.round(mins * rate).toString());
+  };
+
+  const handleSelectWorkoutPreset = (preset: { name: string; duration: string; cal: string }) => {
+    setActivityName(preset.name);
+    setDurationMinutes(preset.duration);
+    setWorkoutCalories(preset.cal);
+  };
+
   const handleAddWeight = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!weightKg) return;
@@ -393,7 +425,9 @@ export default function Home() {
     targetFatsG: 49,
     fitnessGoal: "Cut",
     email: "rifaldiadi88@gmail.com",
-    whatsappNumber: "085693553908"
+    whatsappNumber: "085693553908",
+    currentWeightKg: 68.5,
+    heightCm: 170
   };
 
   const daysInRange = summaryData?.summary.daysInRange || 1;
@@ -516,70 +550,45 @@ export default function Home() {
             {/* Filter Date Bar for Today Menu */}
             <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
 
-            {/* Calorie Card with Progress Ring */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                <div>
-                  <h2 className="text-xs uppercase font-bold text-stone-400 tracking-wider">
-                    {isMultiDay ? `Target Rata-Rata Kalori Harian (${daysInRange} Hari)` : "Target Kalori Harian"}
-                  </h2>
-                  <div className="text-2xl font-black text-stone-900 mt-0.5">
-                    {activeCalories} <span className="text-xs font-normal text-stone-500">/ {targetCalories} kcal{isMultiDay ? " (avg/hari)" : ""}</span>
-                  </div>
-                  {isMultiDay && (
-                    <div className="text-[11px] font-semibold text-orange-600 mt-1">
-                      Total Periode: <strong>{consumedCalories}</strong> / {scaledTargets.calories} kcal
-                    </div>
-                  )}
-                </div>
-                
-                {/* Clean SVG Progress Ring */}
-                <div className="relative h-16 w-16 shrink-0">
-                  <svg className="h-full w-full -rotate-90">
-                    <circle
-                      className="text-stone-100"
-                      strokeWidth="6"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="26"
-                      cx="32"
-                      cy="32"
-                    />
-                    <circle
-                      className="text-orange-500 transition-all duration-500"
-                      strokeWidth="6"
-                      strokeDasharray={2 * Math.PI * 26}
-                      strokeDashoffset={2 * Math.PI * 26 * (1 - caloriePercent / 100)}
-                      strokeLinecap="round"
-                      stroke="currentColor"
-                      fill="transparent"
-                      r="26"
-                      cx="32"
-                      cy="32"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center font-black text-xs text-orange-600">
-                    {caloriePercent}%
-                  </div>
-                </div>
-              </div>
+            {/* Dynamic Concentric Dual-Arc Energy Balance Ring */}
+            <EnergyBalanceRing
+              targetCalories={activeTarget}
+              consumedCalories={activeCalories}
+              burnedCalories={activeBurned}
+              isMultiDay={isMultiDay}
+              daysInRange={daysInRange}
+              fitnessGoal={user.fitnessGoal}
+            />
 
-              {/* Intake vs Burned Breakdown */}
-              <div className="grid grid-cols-3 gap-2 text-center py-1 bg-stone-50 rounded-xl p-3 border border-stone-100">
-                <div>
-                  <div className="text-[10px] font-bold text-stone-400 uppercase">{isMultiDay ? "Intake Avg" : "Intake"}</div>
-                  <div className="text-sm font-extrabold text-orange-600">{activeCalories} <span className="text-[10px] text-stone-400">kcal</span></div>
-                </div>
-                <div className="border-x border-stone-200">
-                  <div className="text-[10px] font-bold text-stone-400 uppercase">{isMultiDay ? "Olahraga Avg" : "Olahraga"}</div>
-                  <div className="text-sm font-extrabold text-green-600">-{activeBurned} <span className="text-[10px] text-stone-400">kcal</span></div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold text-stone-400 uppercase">{isOverBudget ? "Kelebihan" : "Sisa Budget"}</div>
-                  <div className={`text-sm font-extrabold ${isOverBudget ? "text-red-600" : "text-stone-900"}`}>
-                    {displayRemaining} <span className="text-[10px] text-stone-400">kcal</span>
+            {/* WhatsApp Bot Gateway Live Card */}
+            <div className="bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-white rounded-2xl border border-emerald-200/80 p-4 shadow-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-xl shadow-xs shrink-0">
+                    🐱
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-bold text-stone-900">KyuBot WhatsApp Assistant</span>
+                      <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Aktif 24/7
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-600 mt-0.5">
+                      Kirim foto makanan ke <strong>KyuBot</strong> via WhatsApp untuk analisis nutrisi & pencatatan kalori otomatis!
+                    </p>
                   </div>
                 </div>
+                <a
+                  href={`https://wa.me/${(process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || '6285693553908').replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Halo Kyu! 🐱')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-xs flex items-center gap-1"
+                >
+                  <span>Chat KyuBot</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </a>
               </div>
             </div>
 
@@ -837,13 +846,47 @@ export default function Home() {
               )}
             </div>
 
-            {/* Weight Progress Chart (Recharts) */}
+            {/* Weight Quick Stats Bar */}
+            {sortedWeightLogs.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 text-center bg-white rounded-2xl border border-stone-200 p-3 shadow-xs">
+                <div className="p-1">
+                  <div className="text-[10px] uppercase font-bold text-stone-400">Awal Periode</div>
+                  <div className="text-sm font-black text-stone-800 mt-0.5">
+                    {sortedWeightLogs[0].weightKg} <span className="text-[10px] font-normal text-stone-400">kg</span>
+                  </div>
+                </div>
+                <div className="p-1 border-x border-stone-100">
+                  <div className="text-[10px] uppercase font-bold text-stone-400">Terakhir</div>
+                  <div className="text-sm font-black text-orange-600 mt-0.5">
+                    {latestWeight || user.currentWeightKg} <span className="text-[10px] font-normal text-stone-400">kg</span>
+                  </div>
+                </div>
+                <div className="p-1">
+                  <div className="text-[10px] uppercase font-bold text-stone-400">Perubahan</div>
+                  {sortedWeightLogs.length >= 2 ? (
+                    (() => {
+                      const delta = Number(((latestWeight || sortedWeightLogs[sortedWeightLogs.length - 1].weightKg) - sortedWeightLogs[0].weightKg).toFixed(1));
+                      const isMinus = delta < 0;
+                      return (
+                        <div className={`text-sm font-black mt-0.5 ${isMinus ? 'text-emerald-600' : delta === 0 ? 'text-stone-700' : 'text-amber-600'}`}>
+                          {delta > 0 ? `+${delta}` : delta} <span className="text-[10px] font-normal text-stone-400">kg</span>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="text-xs text-stone-400 mt-1 font-semibold">-</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Weight Progress Chart (Recharts Enhanced) */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
                     <TrendingUp className="h-4 w-4 text-orange-500" />
-                    Grafik Progress Berat Badan
+                    Grafik Tren Berat Badan
                   </h3>
                   <p className="text-[11px] text-stone-400 mt-0.5 font-medium">
                     Periode: {dateFilter.mode === "monthly" ? `Bulan ${dateFilter.month}` : dateFilter.mode === "yearly" ? `Tahun ${dateFilter.year}` : dateFilter.mode === "custom" ? `${dateFilter.startDate} s/d ${dateFilter.endDate}` : "30 Hari Terdekat"}
@@ -860,7 +903,13 @@ export default function Home() {
               <div className="h-64 w-full bg-stone-50 rounded-xl border border-stone-100 p-2">
                 {mounted && chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -25, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="weightAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#f97316" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
                       <XAxis 
                         dataKey="date" 
@@ -888,15 +937,32 @@ export default function Home() {
                         labelClassName="font-bold text-stone-500 mb-1"
                         formatter={(value: any) => [`${value} kg`, "Berat"]}
                       />
-                      <Line
+                      {insightsData?.projection?.targetWeightKg && (
+                        <ReferenceLine
+                          y={insightsData.projection.targetWeightKg}
+                          stroke="#10b981"
+                          strokeDasharray="4 4"
+                          strokeWidth={1.5}
+                          label={{
+                            value: `Target: ${insightsData.projection.targetWeightKg}kg`,
+                            position: "insideTopRight",
+                            fill: "#059669",
+                            fontSize: 10,
+                            fontWeight: "bold"
+                          }}
+                        />
+                      )}
+                      <Area
                         type="monotone"
                         dataKey="weight"
-                        stroke="#F97316"
+                        stroke="#f97316"
                         strokeWidth={3}
-                        dot={{ r: 4, stroke: "#ffffff", strokeWidth: 2, fill: "#F97316" }}
-                        activeDot={{ r: 6, stroke: "#ffffff", strokeWidth: 2, fill: "#F97316" }}
+                        fillOpacity={1}
+                        fill="url(#weightAreaGrad)"
+                        dot={{ r: 4, stroke: "#ffffff", strokeWidth: 2, fill: "#f97316" }}
+                        activeDot={{ r: 6, stroke: "#ffffff", strokeWidth: 2, fill: "#f97316" }}
                       />
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-stone-400 text-xs">
@@ -908,26 +974,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* BMI Calculator Indicator */}
-            {latestWeight && (
-              <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-stone-400 uppercase tracking-wider">Status BMI</span>
-                  <span className="font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200 text-[11px]">
-                    22.5 Normal
-                  </span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-stone-100 overflow-hidden flex">
-                  <div className="bg-blue-400 h-full w-[25%]" title="Underweight" />
-                  <div className="bg-green-500 h-full w-[35%]" title="Normal" />
-                  <div className="bg-amber-400 h-full w-[25%]" title="Overweight" />
-                  <div className="bg-red-500 h-full w-[15%]" title="Obese" />
-                </div>
-                <p className="text-[10px] text-stone-400">
-                  Indeks Massa Tubuh dihitung otomatis dari penimbangan berat badan terbaru Anda.
-                </p>
-              </div>
-            )}
+            {/* Interactive BMI Gauge Component */}
+            <BmiGauge
+              weightKg={latestWeight || user.currentWeightKg || 0}
+              heightCm={user.heightCm || 170}
+            />
 
           </main>
         )}
@@ -955,8 +1006,34 @@ export default function Home() {
                 <Dumbbell className="h-4 w-4 text-green-600" />
                 Catat Aktivitas Latihan
               </h3>
+
+              {/* Quick Workout Presets Strip */}
+              <div>
+                <div className="text-[11px] font-semibold text-stone-500 mb-1.5 flex items-center justify-between">
+                  <span>Preset Latihan Cepat:</span>
+                  <span className="text-[10px] text-stone-400">Klik untuk isi otomatis</span>
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {[
+                    { label: "🏋️ Gym / Beban", name: "Latihan Beban (Gym Push/Pull)", duration: "60", cal: "360" },
+                    { label: "🏃 Treadmill", name: "Lari Treadmill / Jogging", duration: "30", cal: "280" },
+                    { label: "🚴 Sepeda", name: "Sepeda Statis / Spinning", duration: "45", cal: "320" },
+                    { label: "🥊 HIIT", name: "Kardio HIIT & Sirkuit", duration: "25", cal: "250" },
+                    { label: "🚶 Jalan Kaki", name: "Jalan Cepat / Brisk Walk", duration: "40", cal: "160" }
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => handleSelectWorkoutPreset(preset)}
+                      className="shrink-0 bg-stone-100 hover:bg-green-50 hover:text-green-700 hover:border-green-300 border border-stone-200 text-stone-700 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               
-              <form onSubmit={handleAddWorkout} className="space-y-3">
+              <form onSubmit={handleAddWorkout} className="space-y-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-semibold text-stone-600 mb-1">Jenis Olahraga / Aktivitas</label>
                   <input
@@ -982,7 +1059,18 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-stone-600 mb-1">Kalori Terbakar (kcal)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-semibold text-stone-600">Kalori (kcal)</label>
+                      {durationMinutes && activityName && (
+                        <button
+                          type="button"
+                          onClick={handleEstimateCalories}
+                          className="text-[10px] text-green-700 hover:text-green-800 font-bold bg-green-50 hover:bg-green-100 px-1.5 py-0.5 rounded transition"
+                        >
+                          ⚡ Estimasi
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="number"
                       required
@@ -1026,13 +1114,21 @@ export default function Home() {
                       hour: "2-digit",
                       minute: "2-digit"
                     });
+                    const isStrength = /beban|gym|angkat|weight|push|pull|squat|bench|deadlift|dumbbell/i.test(workout.activityName);
                     return (
                       <div 
                         key={workout.id} 
                         className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 flex justify-between items-center"
                       >
                         <div>
-                          <div className="text-xs font-bold text-stone-900">{workout.activityName}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-stone-900">{workout.activityName}</span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
+                              isStrength ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}>
+                              {isStrength ? '🏋️ Beban' : '🏃 Kardio'}
+                            </span>
+                          </div>
                           <div className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5">
                             <Clock className="h-3 w-3" /> {time} WIB • {workout.durationMinutes} menit
                           </div>
@@ -1058,7 +1154,7 @@ export default function Home() {
                 <div className="text-center py-8 text-stone-400">
                   <div className="text-2xl mb-1">🏃</div>
                   <p className="text-xs font-semibold text-stone-600">Belum ada aktivitas olahraga hari ini</p>
-                  <p className="text-[11px] text-stone-400 mt-0.5">Catat latihan untuk membakar kalori!</p>
+                  <p className="text-[11px] text-stone-400 mt-0.5">Pilih preset di atas atau catat latihan untuk membakar kalori!</p>
                 </div>
               )}
             </div>

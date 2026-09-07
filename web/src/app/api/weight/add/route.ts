@@ -1,35 +1,20 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { getOrCreateDefaultUser } from '@/lib/user';
+import { resolveUserFromRequest } from '@/lib/user';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { weightKg, date } = body;
+    const weightKg = body.weightKg !== undefined ? body.weightKg : (body.weight !== undefined ? body.weight : (body.berat !== undefined ? body.berat : body.weight_kg));
+    const date = body.date || body.timestamp;
 
-    if (weightKg === undefined) {
-      return NextResponse.json({ success: false, error: 'Missing weightKg' }, { status: 400 });
+    if (weightKg === undefined || isNaN(Number(weightKg))) {
+      return NextResponse.json({ success: false, error: 'Missing or invalid weightKg (aliases: weight, berat)' }, { status: 400 });
     }
 
-    // Resolve user: try session token, fallback to default seed user (for WhatsApp bot calls)
-    let userId: number;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-
-    if (token) {
-      const payload = verifyToken(token);
-      if (payload && payload.userId) {
-        userId = payload.userId;
-      } else {
-        const defaultUser = await getOrCreateDefaultUser();
-        userId = defaultUser.id;
-      }
-    } else {
-      const defaultUser = await getOrCreateDefaultUser();
-      userId = defaultUser.id;
-    }
+    // Resolve user: via session token or WhatsApp Number (for bot calls) or default
+    const user = await resolveUserFromRequest(req, body);
+    const userId = user.id;
 
     let timestamp = new Date();
     if (date) {
@@ -37,15 +22,24 @@ export async function POST(req: Request) {
       timestamp = new Date(Date.UTC(year, month - 1, day, 12 - 7, 0, 0));
     }
 
-    const weightLog = await prisma.weightLog.create({
-      data: {
-        userId,
-        weightKg: parseFloat(weightKg),
-        timestamp
-      }
-    });
+    const numericWeight = parseFloat(weightKg);
 
-    return NextResponse.json({ success: true, data: weightLog });
+    // Create log and keep user.currentWeightKg synced
+    const [weightLog] = await prisma.$transaction([
+      prisma.weightLog.create({
+        data: {
+          userId,
+          weightKg: numericWeight,
+          timestamp
+        }
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { currentWeightKg: numericWeight }
+      })
+    ]);
+
+    return NextResponse.json({ success: true, data: weightLog, currentWeightKg: numericWeight });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

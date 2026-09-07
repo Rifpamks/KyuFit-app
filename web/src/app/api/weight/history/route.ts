@@ -1,28 +1,12 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { getOrCreateDefaultUser } from '@/lib/user';
+import { resolveUserFromRequest } from '@/lib/user';
 
 export async function GET(req: Request) {
   try {
-    // Resolve user: try session token, fallback to default seed user (for WhatsApp bot calls)
-    let userId: number;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-
-    if (token) {
-      const payload = verifyToken(token);
-      if (payload && payload.userId) {
-        userId = payload.userId;
-      } else {
-        const defaultUser = await getOrCreateDefaultUser();
-        userId = defaultUser.id;
-      }
-    } else {
-      const defaultUser = await getOrCreateDefaultUser();
-      userId = defaultUser.id;
-    }
+    // Resolve user: via session token or WhatsApp Number or default
+    const user = await resolveUserFromRequest(req);
+    const userId = user.id;
 
     // Parse date filter query parameters
     const { searchParams } = new URL(req.url);

@@ -1,35 +1,27 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
-import { getOrCreateDefaultUser } from '@/lib/user';
+import { resolveUserFromRequest } from '@/lib/user';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { activityName, durationMinutes, caloriesBurned, date } = body;
+
+    // Parameter aliases for high flexibility (bot & UI)
+    const activityName = body.activityName || body.activity || body.workout || body.name;
+    const durationMinutes = body.durationMinutes !== undefined ? body.durationMinutes : (body.duration !== undefined ? body.duration : body.minutes);
+    const caloriesBurned = body.caloriesBurned !== undefined ? body.caloriesBurned : (body.calories !== undefined ? body.calories : (body.burned !== undefined ? body.burned : body.cal));
+    const date = body.date || body.timestamp;
 
     if (!activityName || durationMinutes === undefined || caloriesBurned === undefined) {
-      return NextResponse.json({ success: false, error: 'Missing required parameters' }, { status: 400 });
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Missing required parameters: activityName, durationMinutes, caloriesBurned (aliases: activity, duration, calories/burned)' 
+      }, { status: 400 });
     }
 
-    // Resolve user: try session token, fallback to default seed user (for WhatsApp bot calls)
-    let userId: number;
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-
-    if (token) {
-      const payload = verifyToken(token);
-      if (payload && payload.userId) {
-        userId = payload.userId;
-      } else {
-        const defaultUser = await getOrCreateDefaultUser();
-        userId = defaultUser.id;
-      }
-    } else {
-      const defaultUser = await getOrCreateDefaultUser();
-      userId = defaultUser.id;
-    }
+    // Resolve user: via session token or WhatsApp Number (for bot calls) or default
+    const user = await resolveUserFromRequest(req, body);
+    const userId = user.id;
 
     // Handle date backdating
     let timestamp = new Date();

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
-import { getOrCreateDefaultUser } from '@/lib/user';
-import { verifyToken } from '@/lib/auth';
+import { resolveUserFromRequest } from '@/lib/user';
 
 export async function GET(req: Request) {
   try {
@@ -13,22 +11,8 @@ export async function GET(req: Request) {
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
 
-    // Resolve user: try session token, fallback to default seed user (for WhatsApp bot calls)
-    let resolvedUser = await getOrCreateDefaultUser();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-
-    if (token) {
-      const payload = verifyToken(token);
-      if (payload && payload.userId) {
-        const user = await prisma.user.findUnique({
-          where: { id: payload.userId }
-        });
-        if (user) {
-          resolvedUser = user;
-        }
-      }
-    }
+    // Resolve user: via session token or WhatsApp Number (query param) or default
+    const resolvedUser = await resolveUserFromRequest(req);
 
     let startWIB: Date;
     let endWIB: Date;
@@ -166,7 +150,8 @@ export async function GET(req: Request) {
           fitnessGoal: resolvedUser.fitnessGoal,
           email: resolvedUser.email,
           whatsappNumber: resolvedUser.whatsappNumber,
-          currentWeightKg: resolvedUser.currentWeightKg
+          currentWeightKg: resolvedUser.currentWeightKg,
+          heightCm: resolvedUser.heightCm
         },
         meals: mealLogs,
         workouts: workoutLogs,
