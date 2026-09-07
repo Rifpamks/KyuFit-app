@@ -14,8 +14,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Public pages: /login and /register
-  if (pathname === '/login' || pathname === '/register') {
+  // Public pages: /login, /register, and /reset-password
+  if (pathname === '/login' || pathname === '/register' || pathname === '/reset-password') {
     if (token) {
       // If logged in, check onboarding status from token payload
       const onboardingComplete = getOnboardingStatus(token);

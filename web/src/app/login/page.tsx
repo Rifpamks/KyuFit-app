@@ -85,7 +85,7 @@ export default function LoginPage() {
               <label className="text-xs font-semibold text-stone-600">Password</label>
               <Link
                 href="/reset-password"
-                className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 transition"
+                className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer transition"
               >
                 Lupa Password?
               </Link>
