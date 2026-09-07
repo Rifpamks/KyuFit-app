@@ -18,7 +18,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Invalid session' }, { status: 401 });
     }
 
-    const { age, gender, heightCm, currentWeightKg, activityLevel, fitnessGoal } = await req.json();
+    const {
+      age,
+      gender,
+      heightCm,
+      currentWeightKg,
+      activityLevel,
+      fitnessGoal,
+      bodyFatPercent,
+      skeletalMuscleMassKg,
+      visceralFatLevel,
+      inbodyScore,
+    } = await req.json();
 
     if (!age || !gender || !heightCm || !currentWeightKg || !activityLevel || !fitnessGoal) {
       return NextResponse.json({ success: false, error: 'Semua field wajib diisi' }, { status: 400 });
@@ -28,28 +39,36 @@ export async function POST(req: Request) {
     const result = calculateAll({
       weightKg: parseFloat(currentWeightKg),
       heightCm: parseFloat(heightCm),
-      age: parseInt(age),
+      age: parseInt(age, 10),
       gender,
       activityLevel,
-      goal: fitnessGoal
+      goal: fitnessGoal,
+      bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : null,
+      skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : null,
+      visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : null,
+      inbodyScore: inbodyScore ? parseInt(inbodyScore, 10) : null,
     });
 
     // Save to user profile
     const updatedUser = await prisma.user.update({
       where: { id: payload.userId },
       data: {
-        age: parseInt(age),
+        age: parseInt(age, 10),
         gender,
         heightCm: parseFloat(heightCm),
         currentWeightKg: parseFloat(currentWeightKg),
         activityLevel,
         fitnessGoal,
+        bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : null,
+        skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : null,
+        visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : null,
+        inbodyScore: inbodyScore ? parseInt(inbodyScore, 10) : null,
         dailyCalorieTarget: result.dailyCalorieTarget,
         targetProteinG: result.targetProteinG,
         targetCarbsG: result.targetCarbsG,
         targetFatsG: result.targetFatsG,
-        onboardingComplete: true
-      }
+        onboardingComplete: true,
+      },
     });
 
     // Refresh token with updated onboardingComplete flag

@@ -3,7 +3,18 @@ import { calculateAll } from '@/lib/tdee';
 
 export async function POST(req: Request) {
   try {
-    const { weightKg, heightCm, age, gender, activityLevel, goal } = await req.json();
+    const {
+      weightKg,
+      heightCm,
+      age,
+      gender,
+      activityLevel,
+      goal,
+      bodyFatPercent,
+      skeletalMuscleMassKg,
+      visceralFatLevel,
+      inbodyScore,
+    } = await req.json();
 
     if (!weightKg || !heightCm || !age || !gender || !activityLevel || !goal) {
       return NextResponse.json({ success: false, error: 'Semua field wajib diisi' }, { status: 400 });
@@ -12,10 +23,14 @@ export async function POST(req: Request) {
     const result = calculateAll({
       weightKg: parseFloat(weightKg),
       heightCm: parseFloat(heightCm),
-      age: parseInt(age),
+      age: parseInt(age, 10),
       gender,
       activityLevel,
-      goal
+      goal,
+      bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : null,
+      skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : null,
+      visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : null,
+      inbodyScore: inbodyScore ? parseInt(inbodyScore, 10) : null,
     });
 
     return NextResponse.json({ success: true, data: result });

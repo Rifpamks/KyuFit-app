@@ -30,6 +30,12 @@ interface CalcResult {
   targetProteinG: number;
   targetCarbsG: number;
   targetFatsG: number;
+  formulaUsed?: 'katch_mcardle' | 'mifflin_st_jeor';
+  formulaName?: string;
+  lbmKg?: number;
+  proteinPerKg?: number;
+  proteinBaseType?: 'lbm' | 'total_weight';
+  warningLevel?: string;
 }
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string; icon: string }[] = [
@@ -53,11 +59,18 @@ export default function OnboardingPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Step 1
+  // Step 1 - Basic
   const [age, setAge] = useState("");
   const [gender, setGender] = useState<Gender | "">("");
   const [heightCm, setHeightCm] = useState("");
   const [currentWeightKg, setCurrentWeightKg] = useState("");
+
+  // Step 1 - Optional InBody / Advanced Body Composition
+  const [showInBody, setShowInBody] = useState(false);
+  const [bodyFatPercent, setBodyFatPercent] = useState("");
+  const [skeletalMuscleMassKg, setSkeletalMuscleMassKg] = useState("");
+  const [visceralFatLevel, setVisceralFatLevel] = useState("");
+  const [inbodyScore, setInbodyScore] = useState("");
 
   // Step 2
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
@@ -97,6 +110,10 @@ export default function OnboardingPage() {
             gender,
             activityLevel,
             goal: fitnessGoal,
+            bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : null,
+            skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : null,
+            visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : null,
+            inbodyScore: inbodyScore ? parseInt(inbodyScore, 10) : null,
           }),
         });
         const data = await res.json();
@@ -134,6 +151,10 @@ export default function OnboardingPage() {
           currentWeightKg,
           activityLevel,
           fitnessGoal,
+          bodyFatPercent: bodyFatPercent ? parseFloat(bodyFatPercent) : null,
+          skeletalMuscleMassKg: skeletalMuscleMassKg ? parseFloat(skeletalMuscleMassKg) : null,
+          visceralFatLevel: visceralFatLevel ? parseInt(visceralFatLevel, 10) : null,
+          inbodyScore: inbodyScore ? parseInt(inbodyScore, 10) : null,
         }),
       });
 
@@ -255,6 +276,83 @@ export default function OnboardingPage() {
                 />
               </div>
             </div>
+
+            {/* Optional InBody Section */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setShowInBody(!showInBody)}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-orange-50/70 hover:bg-orange-50 border border-orange-200 text-xs font-bold text-orange-900 transition"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>Punya Data InBody / Smart Scale? (Opsional)</span>
+                </span>
+                <span className="text-[11px] font-semibold text-orange-600">
+                  {showInBody ? "Sembunyikan ▲" : "Isi Data ▼"}
+                </span>
+              </button>
+
+              {showInBody && (
+                <div className="mt-2.5 p-3.5 bg-stone-50 border border-stone-200 rounded-xl space-y-3">
+                  <p className="text-[11px] text-stone-500 leading-relaxed">
+                    Data komposisi tubuh mengaktifkan formula <strong>Katch-McArdle</strong> (sama dengan mesin InBody gym) untuk hasil BMR & kebutuhan protein yang presisi.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
+                        Percent Body Fat (%BF)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={bodyFatPercent}
+                        onChange={(e) => setBodyFatPercent(e.target.value)}
+                        placeholder="e.g. 24.4"
+                        className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
+                        Massa Otot / SMM (kg)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={skeletalMuscleMassKg}
+                        onChange={(e) => setSkeletalMuscleMassKg(e.target.value)}
+                        placeholder="e.g. 31.0"
+                        className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
+                        Visceral Fat (Level)
+                      </label>
+                      <input
+                        type="number"
+                        value={visceralFatLevel}
+                        onChange={(e) => setVisceralFatLevel(e.target.value)}
+                        placeholder="e.g. 7"
+                        className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-stone-600 mb-1">
+                        InBody Score (Poin)
+                      </label>
+                      <input
+                        type="number"
+                        value={inbodyScore}
+                        onChange={(e) => setInbodyScore(e.target.value)}
+                        placeholder="e.g. 73"
+                        className="w-full bg-white border border-stone-200 focus:border-orange-400 text-xs text-stone-900 px-3 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-orange-100 placeholder-stone-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -327,23 +425,33 @@ export default function OnboardingPage() {
 
             {/* Methodology Education Card */}
             <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-xl">
-              <p className="text-xs text-stone-700 font-bold mb-1">📐 Metodologi Kalkulasi</p>
+              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                <p className="text-xs text-stone-800 font-bold flex items-center gap-1.5">
+                  <span>📐</span>
+                  <span>Metodologi Berbasis Sains</span>
+                </p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-100 text-orange-700">
+                  {calcResult.formulaName || "Mifflin-St Jeor"}
+                </span>
+              </div>
               <p className="text-[11px] text-stone-500 leading-relaxed">
-                Target dihitung menggunakan <strong>Mifflin-St Jeor Equation</strong> untuk mengestimasi 
-                <strong> RMR (Resting Metabolic Rate)</strong>, lalu disesuaikan dengan aktivitas menjadi 
-                <strong> TDEE</strong>, dan dimodifikasi sesuai goal Anda.
+                {calcResult.formulaUsed === "katch_mcardle"
+                  ? `Dihitung dari massa bebas lemak (${calcResult.lbmKg} kg LBM) menggunakan Katch-McArdle Equation (sama dengan mesin InBody gym). Target protein dioptimalkan untuk proteksi otot aktif.`
+                  : "Target kalori dihitung menggunakan Mifflin-St Jeor Equation, dan target protein dialokasikan secara ilmiah berdasarkan gram per kilogram berat badan (bukan persentase statis)."}
               </p>
             </div>
 
             {/* Results Grid */}
             <div className="grid grid-cols-2 gap-2.5">
               <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-center">
-                <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">RMR</div>
+                <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">
+                  {calcResult.formulaUsed === "katch_mcardle" ? "BMR (InBody)" : "RMR (Basal)"}
+                </div>
                 <div className="text-lg font-black text-stone-900 mt-0.5">{calcResult.rmr}</div>
                 <div className="text-[10px] text-stone-500">kcal/hari</div>
               </div>
               <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-center">
-                <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">TDEE</div>
+                <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">TDEE (Aktivitas)</div>
                 <div className="text-lg font-black text-stone-900 mt-0.5">{calcResult.tdee}</div>
                 <div className="text-[10px] text-stone-500">kcal/hari</div>
               </div>
@@ -354,6 +462,9 @@ export default function OnboardingPage() {
               <div className="text-xs text-orange-700 font-bold uppercase tracking-wider">🎯 Target Kalori Harian</div>
               <div className="text-3xl font-black text-stone-900 mt-1">{calcResult.dailyCalorieTarget}</div>
               <div className="text-xs text-orange-600 font-medium">kcal / hari</div>
+              <p className="text-[10px] text-stone-400 mt-1.5">
+                💡 Target awal ini akan otomatis dikalibrasi berdasarkan tren perubahan timbangan harian Anda.
+              </p>
             </div>
 
             {/* Macro Targets */}
@@ -361,14 +472,19 @@ export default function OnboardingPage() {
               <div className="p-2.5 bg-stone-50 border border-orange-200 rounded-xl text-center">
                 <div className="text-[10px] text-orange-600 font-bold uppercase">Protein</div>
                 <div className="text-base font-black text-stone-900 mt-0.5">{calcResult.targetProteinG}g</div>
+                <div className="text-[9px] text-stone-400 font-semibold mt-0.5">
+                  {calcResult.proteinPerKg ? `${calcResult.proteinPerKg}g/kg ${calcResult.proteinBaseType === 'lbm' ? 'LBM' : 'BB'}` : 'Body Weight'}
+                </div>
               </div>
               <div className="p-2.5 bg-stone-50 border border-purple-200 rounded-xl text-center">
                 <div className="text-[10px] text-purple-600 font-bold uppercase">Karbo</div>
                 <div className="text-base font-black text-stone-900 mt-0.5">{calcResult.targetCarbsG}g</div>
+                <div className="text-[9px] text-stone-400 font-semibold mt-0.5">Bahan Bakar</div>
               </div>
               <div className="p-2.5 bg-stone-50 border border-amber-200 rounded-xl text-center">
                 <div className="text-[10px] text-amber-600 font-bold uppercase">Lemak</div>
                 <div className="text-base font-black text-stone-900 mt-0.5">{calcResult.targetFatsG}g</div>
+                <div className="text-[9px] text-stone-400 font-semibold mt-0.5">25% Kalori</div>
               </div>
             </div>
           </div>
