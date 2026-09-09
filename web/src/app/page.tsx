@@ -563,7 +563,7 @@ export default function Home() {
 
         {/* TAB 1: TODAY (Dashboard & Log Makanan) */}
         {activeTab === "today" && (
-          <main className="space-y-3.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <main key="today" className="space-y-3.5 animate-tab-enter">
 
             {/* 7-Day Horizontal Date Strip (Scoped strictly to Today tab) */}
             <div className="bg-white rounded-3xl p-2 border border-stone-100 shadow-xs">
@@ -873,7 +873,7 @@ export default function Home() {
 
         {/* TAB 2: PROGRESS (Grafik Berat Badan & Target Projection) */}
         {activeTab === "progress" && (
-          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <main key="progress" className="space-y-4 animate-tab-enter">
             
             {/* Quick Weight Input Form */}
             <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
@@ -1032,7 +1032,7 @@ export default function Home() {
 
         {/* TAB 3: WORKOUT (Catat Olahraga & Latihan Fisik) */}
         {activeTab === "workout" && (
-          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <main key="workout" className="space-y-4 animate-tab-enter">
             
             {/* Kalori Terbakar Summary Card */}
             <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs flex items-center justify-between">
@@ -1214,7 +1214,7 @@ export default function Home() {
 
         {/* TAB 4: AI TIPS (Rekomendasi & Analisis Nutrisi) */}
         {activeTab === "tips" && (
-          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <main key="tips" className="space-y-4 animate-tab-enter">
             
             {/* Quick Summary AI Card */}
             <div className="bg-gradient-to-br from-stone-900 to-stone-800 text-white rounded-3xl p-5 shadow-sm space-y-2">
@@ -1299,7 +1299,7 @@ export default function Home() {
 
         {/* TAB 5: PROFILE (Setting & Profil User) */}
         {activeTab === "profile" && (
-          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <main key="profile" className="space-y-4 animate-tab-enter">
             
             {/* Profile Header Box */}
             <div className="bg-white rounded-3xl border border-stone-100 p-6 shadow-xs text-center space-y-2">

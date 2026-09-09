@@ -38,6 +38,13 @@ export default function HeroCalorieCard({
   activeDaysCount = 1,
   onOpenDetails,
 }: HeroCalorieCardProps) {
+  const [animated, setAnimated] = React.useState(false);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setAnimated(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
   // Calorie ring progress
   const percent = targetCalories > 0 ? Math.min(Math.round((consumedCalories / targetCalories) * 100), 100) : 0;
   const isOverBudget = remainingCalories < 0;
@@ -47,7 +54,8 @@ export default function HeroCalorieCard({
   const strokeWidth = 6;
   const radius = (ringSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percent / 100) * circumference;
+  const targetOffset = circumference - (percent / 100) * circumference;
+  const strokeDashoffset = animated ? targetOffset : circumference;
 
   return (
     <div className="bg-white rounded-3xl p-5 border border-stone-100/80 shadow-xs transition hover:shadow-sm">

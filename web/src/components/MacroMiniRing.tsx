@@ -62,6 +62,13 @@ export default function MacroMiniRing({
   label,
   customIcon,
 }: MacroMiniRingProps) {
+  const [animated, setAnimated] = React.useState(false);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setAnimated(true), 40);
+    return () => clearTimeout(t);
+  }, []);
+
   const config = MACRO_CONFIG[type];
   const IconComponent = customIcon || config.icon;
   const displayLabel = label || config.defaultLabel;
@@ -74,7 +81,8 @@ export default function MacroMiniRing({
   const strokeWidth = 4.5;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percent / 100) * circumference;
+  const targetOffset = circumference - (percent / 100) * circumference;
+  const strokeDashoffset = animated ? targetOffset : circumference;
 
   return (
     <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-white transition hover:bg-stone-50/80">

@@ -24,3 +24,39 @@ body {
   min-height: 100vh;
 }
 
+/* =========================================================
+   Smooth Tab Entrance & Micro-Interactions (Vanilla CSS)
+   Menggantikan plugin tailwindcss-animate v3 agar bekerja 
+   100% mulus di Tailwind CSS v4
+   ========================================================= */
+
+@keyframes tabEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tab-enter {
+  animation: tabEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes ringSweep {
+  from {
+    stroke-dashoffset: var(--circumference);
+  }
+  to {
+    stroke-dashoffset: var(--target-offset);
+  }
+}
+
+.animate-ring-sweep {
+  animation: ringSweep 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
