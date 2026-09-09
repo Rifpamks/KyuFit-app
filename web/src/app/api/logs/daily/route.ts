@@ -157,6 +157,7 @@ export async function GET(req: Request) {
       success: true,
       data: {
         user: {
+          name: resolvedUser.name,
           dailyCalorieTarget: resolvedUser.dailyCalorieTarget,
           targetProteinG: resolvedUser.targetProteinG,
           targetCarbsG: resolvedUser.targetCarbsG,

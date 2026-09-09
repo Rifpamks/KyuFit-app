@@ -9,6 +9,8 @@ import KyuMascot from "@/components/KyuMascot";
 import EnergyBalanceRing from "@/components/EnergyBalanceRing";
 import BmiGauge from "@/components/BmiGauge";
 import BodyCompositionCard from "@/components/BodyCompositionCard";
+import ProfileBiometricsModal from "@/components/ProfileBiometricsModal";
+import MacroTargetsModal from "@/components/MacroTargetsModal";
 import {
   Flame,
   Apple,
@@ -35,7 +37,9 @@ import {
   MessageSquare,
   SlidersHorizontal,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sliders,
+  Edit3
 } from "lucide-react";
 import {
   AreaChart,
@@ -76,6 +80,7 @@ interface WeightLog {
 
 interface DailySummary {
   user: {
+    name?: string | null;
     dailyCalorieTarget: number;
     targetProteinG: number;
     targetCarbsG: number;
@@ -142,6 +147,9 @@ export default function Home() {
   const [isTargetDetailsOpen, setIsTargetDetailsOpen] = useState(false);
   const [showMealForm, setShowMealForm] = useState(false);
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [isBiometricsModalOpen, setIsBiometricsModalOpen] = useState(false);
+  const [isMacroModalOpen, setIsMacroModalOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   // Date State with Flexible Modes (Daily, Monthly, Yearly, Custom)
   const [dateFilter, setDateFilter] = useState<DateFilterState>({
@@ -448,15 +456,19 @@ export default function Home() {
   if (!mounted) return null;
 
   const user = summaryData?.user || {
+    name: "Rifaldi",
     dailyCalorieTarget: 1779,
     targetProteinG: 98,
     targetCarbsG: 237,
     targetFatsG: 49,
-    fitnessGoal: "Cut",
+    fitnessGoal: "cut",
     email: "rifaldiadi88@gmail.com",
     whatsappNumber: "085693553908",
     currentWeightKg: 68.5,
-    heightCm: 170
+    heightCm: 170,
+    age: 25,
+    gender: "male",
+    activityLevel: "moderate"
   };
 
   const daysInRange = summaryData?.summary.daysInRange || 1;
@@ -1297,27 +1309,90 @@ export default function Home() {
           </main>
         )}
 
-        {/* TAB 5: PROFILE (Setting & Profil User) */}
+        {/* TAB 5: PROFILE (Personal Fitness & Nutrition Command Center) */}
         {activeTab === "profile" && (
           <main key="profile" className="space-y-4 animate-tab-enter">
             
-            {/* Profile Header Box */}
-            <div className="bg-white rounded-3xl border border-stone-100 p-6 shadow-xs text-center space-y-2">
-              <div className="h-16 w-16 rounded-full bg-emerald-50 border-2 border-emerald-500 mx-auto flex items-center justify-center text-emerald-700 shadow-2xs">
-                <User className="h-8 w-8" />
+            {/* Profile Identity Card with Quick Biometrics Snapshot */}
+            <div className="bg-white rounded-3xl border border-stone-200/80 p-5 shadow-xs space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="relative">
+                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-800 shadow-xs">
+                      <User className="h-8 w-8" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-xs">
+                      <span className="flex h-3 w-3 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-base font-extrabold text-stone-900 leading-tight">
+                      {user.name || user.email.split("@")[0]}
+                    </h2>
+                    <p className="text-xs text-stone-500 mt-0.5">{user.email}</p>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                        <Target className="h-3 w-3 text-emerald-600" />
+                        Goal: {user.fitnessGoal.toUpperCase()}
+                      </span>
+                      <span className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                        WA: +{user.whatsappNumber}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsBiometricsModalOpen(true)}
+                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-700 transition active:scale-95"
+                  title="Edit Profil & Biometrik"
+                >
+                  <Edit3 className="h-4 w-4" />
+                </button>
               </div>
-              <div>
-                <h2 className="text-base font-bold text-stone-900">{user.email.split("@")[0]}</h2>
-                <div className="text-xs text-stone-500 font-medium">WhatsApp: +{user.whatsappNumber}</div>
+
+              {/* Quick Biometrics Snapshot Pill Grid */}
+              <div className="grid grid-cols-4 gap-2 pt-2 border-t border-stone-100">
+                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
+                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Usia</span>
+                  <span className="text-xs font-black text-stone-800 mt-0.5 block">{user.age || "-"} th</span>
+                </div>
+                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
+                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Gender</span>
+                  <span className="text-xs font-black text-stone-800 mt-0.5 block capitalize">
+                    {user.gender === "female" ? "Wanita" : "Pria"}
+                  </span>
+                </div>
+                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
+                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Tinggi</span>
+                  <span className="text-xs font-black text-stone-800 mt-0.5 block">{user.heightCm || "-"} cm</span>
+                </div>
+                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
+                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Berat</span>
+                  <span className="text-xs font-black text-stone-800 mt-0.5 block">{user.currentWeightKg || "-"} kg</span>
+                </div>
               </div>
-              <div className="inline-block bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full mt-1">
-                Goal: {user.fitnessGoal.toUpperCase()}
-              </div>
+
+              {/* Edit Biometrics Button */}
+              <button
+                type="button"
+                onClick={() => setIsBiometricsModalOpen(true)}
+                className="w-full bg-emerald-50/80 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/70 font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center gap-2 active:scale-[0.99]"
+              >
+                <Edit3 className="h-3.5 w-3.5 text-emerald-700" />
+                <span>Edit Profil & Biometrik Fisik</span>
+              </button>
             </div>
 
             {/* Body Composition Card */}
             <BodyCompositionCard
               user={{
+                gender: user.gender,
                 currentWeightKg: user.currentWeightKg,
                 heightCm: user.heightCm,
                 bodyFatPercent: user.bodyFatPercent,
@@ -1330,37 +1405,112 @@ export default function Home() {
               onSuccess={fetchData}
             />
 
-            {/* Target Settings Summary */}
-            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
-              <h3 className="text-xs uppercase font-bold text-stone-400 tracking-wider">
-                Parameter Nutrisi Saat Ini
-              </h3>
+            {/* Target Settings Summary with Customization Trigger */}
+            <div className="bg-white rounded-3xl border border-stone-200/80 p-5 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs uppercase font-bold text-stone-900 tracking-wider">
+                    Parameter Nutrisi & Makro
+                  </h3>
+                  <p className="text-[11px] text-stone-500">Target konsumsi harian saat ini</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMacroModalOpen(true)}
+                  className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition active:scale-95"
+                >
+                  <Sliders className="h-3.5 w-3.5" />
+                  <span>Ubah Target</span>
+                </button>
+              </div>
               
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
-                  <div className="text-[10px] text-stone-400 font-semibold">Target Kalori</div>
-                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.dailyCalorieTarget} kcal</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="p-3 rounded-2xl bg-amber-50/60 border border-amber-200/50 text-center sm:text-left">
+                  <div className="text-[10px] text-amber-700 font-semibold uppercase tracking-wider">Kalori</div>
+                  <div className="text-base font-black text-amber-950 mt-0.5">{user.dailyCalorieTarget} <span className="text-[10px] font-normal text-amber-800">kcal</span></div>
+                  <div className="text-[9px] text-amber-700/80 mt-0.5 font-medium">Batas Harian</div>
                 </div>
-                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
-                  <div className="text-[10px] text-stone-400 font-semibold">Target Protein</div>
-                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.targetProteinG} g</div>
+
+                <div className="p-3 rounded-2xl bg-stone-50/80 border border-stone-200/70 text-center sm:text-left">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Protein</div>
+                  <div className="text-base font-black text-stone-900 mt-0.5">{user.targetProteinG} <span className="text-[10px] font-normal text-stone-500">g</span></div>
+                  <div className="text-[9px] text-stone-400 mt-0.5">{user.targetProteinG * 4} kcal</div>
                 </div>
-                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
-                  <div className="text-[10px] text-stone-400 font-semibold">Target Karbohidrat</div>
-                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.targetCarbsG} g</div>
+
+                <div className="p-3 rounded-2xl bg-stone-50/80 border border-stone-200/70 text-center sm:text-left">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Karbohidrat</div>
+                  <div className="text-base font-black text-stone-900 mt-0.5">{user.targetCarbsG} <span className="text-[10px] font-normal text-stone-500">g</span></div>
+                  <div className="text-[9px] text-stone-400 mt-0.5">{user.targetCarbsG * 4} kcal</div>
                 </div>
-                <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100">
-                  <div className="text-[10px] text-stone-400 font-semibold">Target Lemak</div>
-                  <div className="text-sm font-black text-stone-900 mt-0.5">{user.targetFatsG} g</div>
+
+                <div className="p-3 rounded-2xl bg-stone-50/80 border border-stone-200/70 text-center sm:text-left">
+                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Lemak</div>
+                  <div className="text-base font-black text-stone-900 mt-0.5">{user.targetFatsG} <span className="text-[10px] font-normal text-stone-500">g</span></div>
+                  <div className="text-[9px] text-stone-400 mt-0.5">{user.targetFatsG * 9} kcal</div>
                 </div>
               </div>
+
+              {/* Macro Distribution Visual Progress Bar */}
+              {(() => {
+                const totalMacroKcal = user.targetProteinG * 4 + user.targetCarbsG * 4 + user.targetFatsG * 9;
+                const pPct = totalMacroKcal > 0 ? Math.round(((user.targetProteinG * 4) / totalMacroKcal) * 100) : 0;
+                const cPct = totalMacroKcal > 0 ? Math.round(((user.targetCarbsG * 4) / totalMacroKcal) * 100) : 0;
+                const fPct = totalMacroKcal > 0 ? Math.round(((user.targetFatsG * 9) / totalMacroKcal) * 100) : 0;
+                return (
+                  <div className="p-3 bg-stone-50 border border-stone-200/60 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-stone-600">Rasio Makro:</span>
+                      <span className="text-[10px] text-stone-500">
+                        <strong className="text-amber-700">{pPct}% P</strong> •{" "}
+                        <strong className="text-emerald-700">{cPct}% K</strong> •{" "}
+                        <strong className="text-sky-700">{fPct}% L</strong>
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-stone-200 rounded-full flex overflow-hidden">
+                      <div style={{ width: `${pPct}%` }} className="bg-amber-500" title={`Protein: ${pPct}%`} />
+                      <div style={{ width: `${cPct}%` }} className="bg-emerald-600" title={`Karbo: ${cPct}%`} />
+                      <div style={{ width: `${fPct}%` }} className="bg-sky-500" title={`Lemak: ${fPct}%`} />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* Quick Actions & Logout */}
-            <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-2">
+            {/* Kyu Coach & Integration Card */}
+            <div className="bg-gradient-to-br from-emerald-900 to-emerald-950 rounded-3xl p-5 text-white shadow-xs space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/10 p-2 rounded-2xl border border-white/10 shrink-0">
+                  <KyuMascot mood="happy" size={32} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Kyu AI Coach & WhatsApp Sync
+                  </h4>
+                  <p className="text-[11px] text-emerald-200/80 leading-relaxed mt-0.5">
+                    Data profil dan target kalori ini tersinkronisasi langsung saat Anda mencatat makanan & olahraga via chat WhatsApp.
+                  </p>
+                </div>
+              </div>
+
               <button
-                onClick={handleLogout}
-                className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-red-100 active:scale-[0.99]"
+                type="button"
+                onClick={() => {
+                  const botNumber = (process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || "6285139362618").replace(/[^0-9]/g, "");
+                  window.open(`https://wa.me/${botNumber}?text=${encodeURIComponent("Halo KyuFit!")}`, "_blank");
+                }}
+                className="w-full bg-white text-emerald-950 hover:bg-emerald-50 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 active:scale-[0.99] shadow-xs"
+              >
+                <MessageSquare className="h-3.5 w-3.5 text-emerald-800" />
+                <span>Buka Chat WhatsApp Kyu</span>
+              </button>
+            </div>
+
+            {/* Logout Action Button */}
+            <div className="bg-white rounded-3xl border border-stone-200/80 p-5 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setIsLogoutConfirmOpen(true)}
+                className="w-full bg-rose-50 hover:bg-rose-100/80 text-rose-600 font-bold py-3 rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-rose-200/60 active:scale-[0.99]"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Keluar (Logout)</span>
@@ -1446,6 +1596,68 @@ export default function Home() {
         onSelectAction={handleQuickActionSelect}
         botWhatsAppNumber={process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER}
       />
+
+      {/* Profile & Biometrics Modal */}
+      <ProfileBiometricsModal
+        isOpen={isBiometricsModalOpen}
+        onClose={() => setIsBiometricsModalOpen(false)}
+        user={{
+          name: user.name,
+          age: user.age,
+          gender: user.gender,
+          heightCm: user.heightCm,
+          currentWeightKg: user.currentWeightKg,
+          activityLevel: user.activityLevel,
+          fitnessGoal: user.fitnessGoal,
+        }}
+        onSuccess={fetchData}
+      />
+
+      {/* Custom Macro Targets Modal */}
+      <MacroTargetsModal
+        isOpen={isMacroModalOpen}
+        onClose={() => setIsMacroModalOpen(false)}
+        user={{
+          dailyCalorieTarget: user.dailyCalorieTarget,
+          targetProteinG: user.targetProteinG,
+          targetCarbsG: user.targetCarbsG,
+          targetFatsG: user.targetFatsG,
+        }}
+        onSuccess={fetchData}
+      />
+
+      {/* Safe Logout Confirmation Dialog */}
+      {isLogoutConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white w-full max-w-sm rounded-3xl border border-stone-200 shadow-2xl p-6 text-center space-y-4">
+            <div className="h-12 w-12 rounded-2xl bg-rose-50 border border-rose-200/60 mx-auto flex items-center justify-center text-rose-600">
+              <LogOut className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-stone-900">Konfirmasi Keluar</h3>
+              <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+                Apakah Anda yakin ingin keluar dari akun KyuFit? Anda dapat masuk kembali kapan saja dengan nomor WhatsApp atau email Anda.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsLogoutConfirmOpen(false)}
+                className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2.5 rounded-xl text-xs transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
