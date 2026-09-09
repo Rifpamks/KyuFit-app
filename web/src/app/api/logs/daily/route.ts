@@ -173,7 +173,10 @@ export async function GET(req: Request) {
           bodyFatPercent: resolvedUser.bodyFatPercent,
           skeletalMuscleMassKg: resolvedUser.skeletalMuscleMassKg,
           visceralFatLevel: resolvedUser.visceralFatLevel,
-          inbodyScore: resolvedUser.inbodyScore
+          inbodyScore: resolvedUser.inbodyScore,
+          targetWeightKg: resolvedUser.targetWeightKg,
+          dietaryRestrictions: resolvedUser.dietaryRestrictions,
+          birthDate: resolvedUser.birthDate ? resolvedUser.birthDate.toISOString().slice(0, 10) : null
         },
         meals: mealLogs,
         workouts: workoutLogs,

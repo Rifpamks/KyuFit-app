@@ -8,9 +8,13 @@ import QuickActionModal from "@/components/QuickActionModal";
 import KyuMascot from "@/components/KyuMascot";
 import EnergyBalanceRing from "@/components/EnergyBalanceRing";
 import BmiGauge from "@/components/BmiGauge";
-import BodyCompositionCard from "@/components/BodyCompositionCard";
 import ProfileBiometricsModal from "@/components/ProfileBiometricsModal";
 import MacroTargetsModal from "@/components/MacroTargetsModal";
+import ProfileMainList from "@/components/profile/ProfileMainList";
+import ProfileEditView from "@/components/profile/ProfileEditView";
+import MedicalInfoView from "@/components/profile/MedicalInfoView";
+import WeightHistoryView from "@/components/profile/WeightHistoryView";
+import AssessmentHistoryView from "@/components/profile/AssessmentHistoryView";
 import {
   Flame,
   Apple,
@@ -97,6 +101,9 @@ interface DailySummary {
     skeletalMuscleMassKg?: number | null;
     visceralFatLevel?: number | null;
     inbodyScore?: number | null;
+    targetWeightKg?: number | null;
+    dietaryRestrictions?: string | null;
+    birthDate?: string | null;
   };
   meals: Meal[];
   workouts: Workout[];
@@ -150,6 +157,9 @@ export default function Home() {
   const [isBiometricsModalOpen, setIsBiometricsModalOpen] = useState(false);
   const [isMacroModalOpen, setIsMacroModalOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  
+  // Profile Sub-View Router State
+  const [profileSubView, setProfileSubView] = useState<"main" | "edit-profile" | "medical-info" | "weight-history" | "assessment-history">("main");
 
   // Date State with Flexible Modes (Daily, Monthly, Yearly, Custom)
   const [dateFilter, setDateFilter] = useState<DateFilterState>({
@@ -466,6 +476,9 @@ export default function Home() {
     whatsappNumber: "085693553908",
     currentWeightKg: 68.5,
     heightCm: 170,
+    targetWeightKg: 55,
+    dietaryRestrictions: "Tidak ada pantangan",
+    birthDate: "1999-12-04",
     age: 25,
     gender: "male",
     activityLevel: "moderate"
@@ -548,7 +561,10 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("profile")}
+            onClick={() => {
+              setActiveTab("profile");
+              setProfileSubView("main");
+            }}
             className="h-10 w-10 rounded-full bg-white border border-stone-200/80 shadow-2xs flex items-center justify-center text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition active:scale-95"
             title="Profil Pengguna"
           >
@@ -1309,214 +1325,63 @@ export default function Home() {
           </main>
         )}
 
-        {/* TAB 5: PROFILE (Personal Fitness & Nutrition Command Center) */}
+        {/* TAB 5: PROFILE (Clean Settings List & Sub-Views) */}
         {activeTab === "profile" && (
-          <main key="profile" className="space-y-4 animate-tab-enter">
-            
-            {/* Profile Identity Card with Quick Biometrics Snapshot */}
-            <div className="bg-white rounded-3xl border border-stone-200/80 p-5 shadow-xs space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="relative">
-                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-800 shadow-xs">
-                      <User className="h-8 w-8" />
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-xs">
-                      <span className="flex h-3 w-3 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h2 className="text-base font-extrabold text-stone-900 leading-tight">
-                      {user.name || user.email.split("@")[0]}
-                    </h2>
-                    <p className="text-xs text-stone-500 mt-0.5">{user.email}</p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                        <Target className="h-3 w-3 text-emerald-600" />
-                        Goal: {user.fitnessGoal.toUpperCase()}
-                      </span>
-                      <span className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                        WA: +{user.whatsappNumber}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsBiometricsModalOpen(true)}
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-700 transition active:scale-95"
-                  title="Edit Profil & Biometrik"
-                >
-                  <Edit3 className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Quick Biometrics Snapshot Pill Grid */}
-              <div className="grid grid-cols-4 gap-2 pt-2 border-t border-stone-100">
-                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
-                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Usia</span>
-                  <span className="text-xs font-black text-stone-800 mt-0.5 block">{user.age || "-"} th</span>
-                </div>
-                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
-                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Gender</span>
-                  <span className="text-xs font-black text-stone-800 mt-0.5 block capitalize">
-                    {user.gender === "female" ? "Wanita" : "Pria"}
-                  </span>
-                </div>
-                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
-                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Tinggi</span>
-                  <span className="text-xs font-black text-stone-800 mt-0.5 block">{user.heightCm || "-"} cm</span>
-                </div>
-                <div className="p-2 bg-stone-50/70 border border-stone-100 rounded-xl text-center">
-                  <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider block">Berat</span>
-                  <span className="text-xs font-black text-stone-800 mt-0.5 block">{user.currentWeightKg || "-"} kg</span>
-                </div>
-              </div>
-
-              {/* Edit Biometrics Button */}
-              <button
-                type="button"
-                onClick={() => setIsBiometricsModalOpen(true)}
-                className="w-full bg-emerald-50/80 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/70 font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center gap-2 active:scale-[0.99]"
-              >
-                <Edit3 className="h-3.5 w-3.5 text-emerald-700" />
-                <span>Edit Profil & Biometrik Fisik</span>
-              </button>
-            </div>
-
-            {/* Body Composition Card */}
-            <BodyCompositionCard
-              user={{
-                gender: user.gender,
-                currentWeightKg: user.currentWeightKg,
-                heightCm: user.heightCm,
-                bodyFatPercent: user.bodyFatPercent,
-                skeletalMuscleMassKg: user.skeletalMuscleMassKg,
-                visceralFatLevel: user.visceralFatLevel,
-                inbodyScore: user.inbodyScore,
-                dailyCalorieTarget: user.dailyCalorieTarget,
-                targetProteinG: user.targetProteinG,
-              }}
-              onSuccess={fetchData}
-            />
-
-            {/* Target Settings Summary with Customization Trigger */}
-            <div className="bg-white rounded-3xl border border-stone-200/80 p-5 shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs uppercase font-bold text-stone-900 tracking-wider">
-                    Parameter Nutrisi & Makro
-                  </h3>
-                  <p className="text-[11px] text-stone-500">Target konsumsi harian saat ini</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsMacroModalOpen(true)}
-                  className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition active:scale-95"
-                >
-                  <Sliders className="h-3.5 w-3.5" />
-                  <span>Ubah Target</span>
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="p-3 rounded-2xl bg-amber-50/60 border border-amber-200/50 text-center sm:text-left">
-                  <div className="text-[10px] text-amber-700 font-semibold uppercase tracking-wider">Kalori</div>
-                  <div className="text-base font-black text-amber-950 mt-0.5">{user.dailyCalorieTarget} <span className="text-[10px] font-normal text-amber-800">kcal</span></div>
-                  <div className="text-[9px] text-amber-700/80 mt-0.5 font-medium">Batas Harian</div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-stone-50/80 border border-stone-200/70 text-center sm:text-left">
-                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Protein</div>
-                  <div className="text-base font-black text-stone-900 mt-0.5">{user.targetProteinG} <span className="text-[10px] font-normal text-stone-500">g</span></div>
-                  <div className="text-[9px] text-stone-400 mt-0.5">{user.targetProteinG * 4} kcal</div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-stone-50/80 border border-stone-200/70 text-center sm:text-left">
-                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Karbohidrat</div>
-                  <div className="text-base font-black text-stone-900 mt-0.5">{user.targetCarbsG} <span className="text-[10px] font-normal text-stone-500">g</span></div>
-                  <div className="text-[9px] text-stone-400 mt-0.5">{user.targetCarbsG * 4} kcal</div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-stone-50/80 border border-stone-200/70 text-center sm:text-left">
-                  <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Lemak</div>
-                  <div className="text-base font-black text-stone-900 mt-0.5">{user.targetFatsG} <span className="text-[10px] font-normal text-stone-500">g</span></div>
-                  <div className="text-[9px] text-stone-400 mt-0.5">{user.targetFatsG * 9} kcal</div>
-                </div>
-              </div>
-
-              {/* Macro Distribution Visual Progress Bar */}
-              {(() => {
-                const totalMacroKcal = user.targetProteinG * 4 + user.targetCarbsG * 4 + user.targetFatsG * 9;
-                const pPct = totalMacroKcal > 0 ? Math.round(((user.targetProteinG * 4) / totalMacroKcal) * 100) : 0;
-                const cPct = totalMacroKcal > 0 ? Math.round(((user.targetCarbsG * 4) / totalMacroKcal) * 100) : 0;
-                const fPct = totalMacroKcal > 0 ? Math.round(((user.targetFatsG * 9) / totalMacroKcal) * 100) : 0;
-                return (
-                  <div className="p-3 bg-stone-50 border border-stone-200/60 rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-stone-600">Rasio Makro:</span>
-                      <span className="text-[10px] text-stone-500">
-                        <strong className="text-amber-700">{pPct}% P</strong> •{" "}
-                        <strong className="text-emerald-700">{cPct}% K</strong> •{" "}
-                        <strong className="text-sky-700">{fPct}% L</strong>
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-stone-200 rounded-full flex overflow-hidden">
-                      <div style={{ width: `${pPct}%` }} className="bg-amber-500" title={`Protein: ${pPct}%`} />
-                      <div style={{ width: `${cPct}%` }} className="bg-emerald-600" title={`Karbo: ${cPct}%`} />
-                      <div style={{ width: `${fPct}%` }} className="bg-sky-500" title={`Lemak: ${fPct}%`} />
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Kyu Coach & Integration Card */}
-            <div className="bg-gradient-to-br from-emerald-900 to-emerald-950 rounded-3xl p-5 text-white shadow-xs space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/10 p-2 rounded-2xl border border-white/10 shrink-0">
-                  <KyuMascot mood="happy" size={32} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Kyu AI Coach & WhatsApp Sync
-                  </h4>
-                  <p className="text-[11px] text-emerald-200/80 leading-relaxed mt-0.5">
-                    Data profil dan target kalori ini tersinkronisasi langsung saat Anda mencatat makanan & olahraga via chat WhatsApp.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const botNumber = (process.env.NEXT_PUBLIC_BOT_WHATSAPP_NUMBER || "6285139362618").replace(/[^0-9]/g, "");
-                  window.open(`https://wa.me/${botNumber}?text=${encodeURIComponent("Halo KyuFit!")}`, "_blank");
+          <main key={`profile-${profileSubView}`} className="space-y-4 animate-tab-enter pb-4">
+            {profileSubView === "main" && (
+              <ProfileMainList
+                user={user}
+                onSelectMenu={(menu) => {
+                  if (menu === "logout") {
+                    setIsLogoutConfirmOpen(true);
+                  } else {
+                    setProfileSubView(menu);
+                  }
                 }}
-                className="w-full bg-white text-emerald-950 hover:bg-emerald-50 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 active:scale-[0.99] shadow-xs"
-              >
-                <MessageSquare className="h-3.5 w-3.5 text-emerald-800" />
-                <span>Buka Chat WhatsApp Kyu</span>
-              </button>
-            </div>
+                onBackToToday={() => setActiveTab("today")}
+              />
+            )}
 
-            {/* Logout Action Button */}
-            <div className="bg-white rounded-3xl border border-stone-200/80 p-5 shadow-xs">
-              <button
-                type="button"
-                onClick={() => setIsLogoutConfirmOpen(true)}
-                className="w-full bg-rose-50 hover:bg-rose-100/80 text-rose-600 font-bold py-3 rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-rose-200/60 active:scale-[0.99]"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Keluar (Logout)</span>
-              </button>
-            </div>
+            {profileSubView === "edit-profile" && (
+              <ProfileEditView
+                user={user}
+                onBack={() => setProfileSubView("main")}
+                onSuccess={fetchData}
+              />
+            )}
 
+            {profileSubView === "medical-info" && (
+              <MedicalInfoView
+                user={user}
+                onBack={() => setProfileSubView("main")}
+                onSuccess={fetchData}
+              />
+            )}
+
+            {profileSubView === "weight-history" && (
+              <WeightHistoryView
+                currentWeightKg={user.currentWeightKg || 62}
+                targetWeightKg={user.targetWeightKg}
+                heightCm={user.heightCm}
+                weightLogs={weightLogs}
+                onBack={() => setProfileSubView("main")}
+                onSuccess={fetchData}
+              />
+            )}
+
+            {profileSubView === "assessment-history" && (
+              <AssessmentHistoryView
+                user={{
+                  ...user,
+                  dailyCalorieTarget: user.dailyCalorieTarget,
+                  targetProteinG: user.targetProteinG,
+                  targetCarbsG: user.targetCarbsG,
+                  targetFatsG: user.targetFatsG,
+                }}
+                onBack={() => setProfileSubView("main")}
+                onSuccess={fetchData}
+              />
+            )}
           </main>
         )}
 
@@ -1577,7 +1442,10 @@ export default function Home() {
           {/* Tab 5: Profile */}
           <button
             type="button"
-            onClick={() => setActiveTab("profile")}
+            onClick={() => {
+              setActiveTab("profile");
+              setProfileSubView("main");
+            }}
             className={`flex flex-col items-center justify-center py-1 flex-1 transition active:scale-95 ${
               activeTab === "profile" ? "text-emerald-700 font-bold" : "text-stone-400 hover:text-stone-600"
             }`}
@@ -1626,11 +1494,11 @@ export default function Home() {
         onSuccess={fetchData}
       />
 
-      {/* Safe Logout Confirmation Dialog */}
+      {/* Safe Logout Confirmation Dialog (Cohesive Deep Emerald & Warm Stone Palette) */}
       {isLogoutConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white w-full max-w-sm rounded-3xl border border-stone-200 shadow-2xl p-6 text-center space-y-4">
-            <div className="h-12 w-12 rounded-2xl bg-rose-50 border border-rose-200/60 mx-auto flex items-center justify-center text-rose-600">
+            <div className="h-12 w-12 rounded-2xl bg-stone-100 border border-stone-200/80 mx-auto flex items-center justify-center text-stone-700">
               <LogOut className="h-6 w-6" />
             </div>
             <div>
@@ -1650,7 +1518,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
+                className="flex-1 bg-emerald-900 hover:bg-emerald-950 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm"
               >
                 Ya, Keluar
               </button>

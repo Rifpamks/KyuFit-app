@@ -29,11 +29,15 @@ model User {
   skeletalMuscleMassKg Float?       @map("skeletal_muscle_mass_kg")
   visceralFatLevel     Int?         @map("visceral_fat_level")
   inbodyScore          Int?         @map("inbody_score")
+  targetWeightKg      Float?       @map("target_weight_kg")
+  dietaryRestrictions String?      @map("dietary_restrictions")
+  birthDate           DateTime?    @map("birth_date")
   onboardingComplete  Boolean      @default(false) @map("onboarding_complete")
   createdAt           DateTime     @default(now()) @map("created_at")
   mealLogs            MealLog[]
   weightLogs          WeightLog[]
   workoutLogs         WorkoutLog[]
+  assessmentLogs      AssessmentLog[]
 
   @@map("users")
 }
@@ -86,3 +90,25 @@ model PasswordResetToken {
   @@index([email])
   @@map("password_reset_tokens")
 }
+
+model AssessmentLog {
+  id                    Int      @id @default(autoincrement())
+  userId                Int      @map("user_id")
+  timestamp             DateTime @default(now())
+  title                 String   @default("Update Assessment")
+  fitnessGoal           String   @map("fitness_goal")
+  activityLevel         String   @map("activity_level")
+  weightKg              Float    @map("weight_kg")
+  targetWeightKg        Float?   @map("target_weight_kg")
+  bodyFatPercent        Float?   @map("body_fat_percent")
+  dailyCalorieTarget    Int      @map("daily_calorie_target")
+  targetProteinG        Int      @map("target_protein_g")
+  targetCarbsG          Int      @map("target_carbs_g")
+  targetFatsG           Int      @map("target_fats_g")
+  programDurationMonths Int?     @default(3) @map("program_duration_months")
+  pace                  String?  @default("Moderate")
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_logs")
+}
+
