@@ -63,7 +63,7 @@ export default function HeroCalorieCard({
           <p className="text-xs text-stone-500 font-medium mt-0.5">
             dari <span className="font-bold text-stone-700">{Math.round(targetCalories)}</span> yang dikonsumsi
             {isMultiDay && activeDaysCount > 0 && (
-              <span className="text-[10px] text-orange-600 block sm:inline sm:ml-1 font-semibold">
+              <span className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-md block sm:inline sm:ml-1 font-bold">
                 (Rata-rata {activeDaysCount} hari)
               </span>
             )}

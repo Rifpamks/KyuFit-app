@@ -5,6 +5,7 @@ import DateFilterBar, { DateFilterState } from "@/components/DateFilterBar";
 import DateStrip from "@/components/DateStrip";
 import HeroCalorieCard from "@/components/HeroCalorieCard";
 import QuickActionModal from "@/components/QuickActionModal";
+import KyuMascot from "@/components/KyuMascot";
 import EnergyBalanceRing from "@/components/EnergyBalanceRing";
 import BmiGauge from "@/components/BmiGauge";
 import BodyCompositionCard from "@/components/BodyCompositionCard";
@@ -519,12 +520,18 @@ export default function Home() {
       {/* Centered Mobile-First Container (Max 448px width, perfectly matching iOS/Android app reference) */}
       <div className="mx-auto max-w-md px-4 pt-4 space-y-3.5">
         
-        {/* App Header (Clean brand name + User avatar circle, exactly like reference) */}
-        <header className="flex items-center justify-between py-1 px-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-2xl font-black tracking-tight text-emerald-800">
-              kyu<span className="text-orange-500">fit</span>
-            </span>
+        {/* App Header with Original Kyu Vector Mascot & Brand Name */}
+        <header className="flex items-center justify-between py-1.5 px-1">
+          <div className="flex items-center gap-2.5">
+            <KyuMascot mood="header" size={36} />
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tight text-emerald-950 leading-none">
+                kyu<span className="text-amber-500">fit</span>
+              </span>
+              <span className="text-[9px] font-bold tracking-wider text-stone-400 uppercase leading-tight mt-0.5">
+                Nutrition & Body Tracker
+              </span>
+            </div>
           </div>
 
           <button
@@ -554,45 +561,45 @@ export default function Home() {
           </div>
         )}
 
-        {/* 7-Day Horizontal Date Strip (Replaces old clunky dropdown) */}
-        <div className="bg-white rounded-3xl p-2 border border-stone-100 shadow-xs">
-          <DateStrip
-            selectedDate={dateFilter.date}
-            onSelectDate={(date) => {
-              setDateFilter((prev) => ({
-                ...prev,
-                mode: "daily",
-                date,
-                month: date.slice(0, 7),
-                year: date.slice(0, 4),
-                startDate: date,
-                endDate: date
-              }));
-            }}
-          />
-
-          {/* Optional Filter Toggle for Advanced Multi-Day / Monthly Analytics */}
-          <div className="px-2 pt-1 pb-1 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-              className="text-[10px] font-semibold text-stone-400 hover:text-stone-600 flex items-center gap-1 transition"
-            >
-              <SlidersHorizontal className="h-3 w-3" />
-              <span>{showAdvancedFilter ? "Tutup Filter Rentang" : "Filter Rentang Waktu"}</span>
-            </button>
-          </div>
-
-          {showAdvancedFilter && (
-            <div className="pt-2 border-t border-stone-100 mt-1 animate-in fade-in duration-150">
-              <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
-            </div>
-          )}
-        </div>
-
         {/* TAB 1: TODAY (Dashboard & Log Makanan) */}
         {activeTab === "today" && (
-          <main className="space-y-3.5 animate-in fade-in duration-200">
+          <main className="space-y-3.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+
+            {/* 7-Day Horizontal Date Strip (Scoped strictly to Today tab) */}
+            <div className="bg-white rounded-3xl p-2 border border-stone-100 shadow-xs">
+              <DateStrip
+                selectedDate={dateFilter.date}
+                onSelectDate={(date) => {
+                  setDateFilter((prev) => ({
+                    ...prev,
+                    mode: "daily",
+                    date,
+                    month: date.slice(0, 7),
+                    year: date.slice(0, 4),
+                    startDate: date,
+                    endDate: date
+                  }));
+                }}
+              />
+
+              {/* Optional Filter Toggle for Advanced Multi-Day / Monthly Analytics */}
+              <div className="px-2 pt-1 pb-1 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+                  className="text-[10px] font-semibold text-stone-400 hover:text-stone-600 flex items-center gap-1 transition"
+                >
+                  <SlidersHorizontal className="h-3 w-3" />
+                  <span>{showAdvancedFilter ? "Tutup Filter Rentang" : "Filter Rentang Waktu"}</span>
+                </button>
+              </div>
+
+              {showAdvancedFilter && (
+                <div className="pt-2 border-t border-stone-100 mt-1 animate-in fade-in duration-150">
+                  <DateFilterBar filter={dateFilter} onChange={setDateFilter} />
+                </div>
+              )}
+            </div>
             
             {/* Hero Calorie Card with Flame Progress Ring and 2x2 MacroMiniRings */}
             <HeroCalorieCard
@@ -853,12 +860,10 @@ export default function Home() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-8 text-stone-400 bg-white rounded-3xl border border-stone-100 shadow-2xs">
-                  <div className="h-11 w-11 rounded-2xl bg-stone-50 border border-stone-100 text-stone-400 flex items-center justify-center mx-auto mb-2.5">
-                    <Utensils className="h-5 w-5 text-stone-400" />
-                  </div>
-                  <p className="text-xs font-bold text-stone-700">Belum ada makanan pada tanggal ini</p>
-                  <p className="text-[11px] text-stone-400 mt-0.5">Kirim foto ke WhatsApp atau catat manual!</p>
+                <div className="text-center py-8 px-4 text-stone-400 bg-white rounded-3xl border border-stone-100 shadow-2xs flex flex-col items-center justify-center">
+                  <KyuMascot mood="hungry" size={82} className="mb-2" />
+                  <p className="text-xs font-bold text-stone-800">Belum ada makanan pada tanggal ini</p>
+                  <p className="text-[11px] text-stone-400 mt-0.5">Kirim foto ke WhatsApp atau gunakan tombol (+) untuk catat cepat!</p>
                 </div>
               )}
             </div>
@@ -868,7 +873,7 @@ export default function Home() {
 
         {/* TAB 2: PROGRESS (Grafik Berat Badan & Target Projection) */}
         {activeTab === "progress" && (
-          <main className="space-y-4 animate-in fade-in duration-200">
+          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
             
             {/* Quick Weight Input Form */}
             <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs space-y-3">
@@ -1027,7 +1032,7 @@ export default function Home() {
 
         {/* TAB 3: WORKOUT (Catat Olahraga & Latihan Fisik) */}
         {activeTab === "workout" && (
-          <main className="space-y-4 animate-in fade-in duration-200">
+          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
             
             {/* Kalori Terbakar Summary Card */}
             <div className="bg-white rounded-3xl border border-stone-100 p-5 shadow-xs flex items-center justify-between">
@@ -1209,7 +1214,7 @@ export default function Home() {
 
         {/* TAB 4: AI TIPS (Rekomendasi & Analisis Nutrisi) */}
         {activeTab === "tips" && (
-          <main className="space-y-4 animate-in fade-in duration-200">
+          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
             
             {/* Quick Summary AI Card */}
             <div className="bg-gradient-to-br from-stone-900 to-stone-800 text-white rounded-3xl p-5 shadow-sm space-y-2">
@@ -1294,7 +1299,7 @@ export default function Home() {
 
         {/* TAB 5: PROFILE (Setting & Profil User) */}
         {activeTab === "profile" && (
-          <main className="space-y-4 animate-in fade-in duration-200">
+          <main className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
             
             {/* Profile Header Box */}
             <div className="bg-white rounded-3xl border border-stone-100 p-6 shadow-xs text-center space-y-2">

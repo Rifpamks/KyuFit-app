@@ -24,32 +24,32 @@ export default function QuickActionModal({
       title: "Catat Makanan",
       description: "Input manual kalori dan makronutrisi harian",
       icon: Utensils,
-      color: "bg-orange-50 text-orange-600 border-orange-100",
-      iconColor: "text-orange-600",
+      color: "bg-amber-50 text-amber-600 border-amber-100/80",
+      iconColor: "text-amber-600",
     },
     {
       id: "workout" as const,
       title: "Catat Olahraga",
       description: "Catat aktivitas fisik dan kalori terbakar",
       icon: Dumbbell,
-      color: "bg-emerald-50 text-emerald-600 border-emerald-100",
-      iconColor: "text-emerald-600",
+      color: "bg-emerald-50 text-emerald-700 border-emerald-100/80",
+      iconColor: "text-emerald-700",
     },
     {
       id: "weight" as const,
       title: "Catat Timbangan",
       description: "Update berat badan terkini & pantau tren",
       icon: Scale,
-      color: "bg-purple-50 text-purple-600 border-purple-100",
-      iconColor: "text-purple-600",
+      color: "bg-stone-50 text-stone-700 border-stone-200/80",
+      iconColor: "text-stone-700",
     },
     {
       id: "whatsapp" as const,
       title: "Kirim Foto ke KyuBot",
       description: "Kirim foto piring via WhatsApp untuk auto-log",
       icon: MessageSquare,
-      color: "bg-green-50 text-green-700 border-green-100",
-      iconColor: "text-green-600",
+      color: "bg-emerald-600 text-white border-emerald-600 shadow-xs",
+      iconColor: "text-white",
     },
   ];
 
@@ -89,14 +89,14 @@ export default function QuickActionModal({
                   onSelectAction(item.id);
                   onClose();
                 }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-stone-100 hover:border-stone-200 hover:bg-stone-50/80 transition text-left group active:scale-[0.99]"
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl border border-stone-100 hover:border-emerald-200 hover:bg-emerald-50/40 transition text-left group active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3.5">
                   <div className={`p-3 rounded-2xl border ${item.color} shrink-0`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-stone-900 group-hover:text-orange-600 transition">
+                    <div className="text-xs font-bold text-stone-900 group-hover:text-emerald-800 transition">
                       {item.title}
                     </div>
                     <div className="text-[11px] text-stone-500 font-medium mt-0.5">
